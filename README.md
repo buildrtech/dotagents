@@ -1,6 +1,6 @@
 # dotagents
 
-Skills and extensions for AI coding agents.
+Skills for AI coding agents.
 
 ## Quick Start
 
@@ -39,7 +39,6 @@ These methodology skills improve AI agent effectiveness:
 | `make install` | Build and install skills for all agents |
 | `make build` | Build skills to `build/` without installing |
 | `make install-skills` | Install skills only |
-| `make install-extensions` | Install Pi extensions only |
 | `make clean` | Remove all installed artifacts |
 | `make help` | Show all available commands |
 

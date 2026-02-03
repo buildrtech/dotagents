@@ -2,7 +2,7 @@
 """
 Build system for AI agent plugins.
 
-Reads plugins.toml and builds/installs skills and extensions for
+Reads plugins.toml and builds/installs skills for
 Claude Code, Codex CLI, OpenCode, and Pi Agent.
 
 OpenCode, Pi, and Codex all read from ~/.agents/skills.
@@ -27,7 +27,6 @@ import tomllib
 ROOT = Path(__file__).parent.parent
 PLUGINS_DIR = ROOT / "plugins"
 SKILLS_DIR = ROOT / "skills"
-EXTENSIONS_DIR = ROOT / "extensions"
 BUILD_DIR = ROOT / "build"
 CONFIG_FILE = ROOT / "plugins.toml"
 CONFIGS_DIR = ROOT / "configs"
@@ -64,8 +63,6 @@ class Plugin:
     url: str
     skills_path: list[str] = field(default_factory=lambda: ["skills/*"])
     skills: list[str] = field(default_factory=list)  # Empty = none, ["*"] = all
-    extensions_path: list[str] = field(default_factory=lambda: ["extensions/*.ts"])
-    extensions: list[str] = field(default_factory=list)  # Empty = none, ["*"] = all
     alias: str | None = None
 
     @property
@@ -97,10 +94,6 @@ class Plugin:
             url=data["url"],
             skills_path=normalize_path(data.get("skills_path", "skills/*")),
             skills=normalize_items(data.get("skills")),
-            extensions_path=normalize_path(
-                data.get("extensions_path", "extensions/*.ts")
-            ),
-            extensions=normalize_items(data.get("extensions")),
             alias=data.get("alias"),
         )
 
@@ -141,40 +134,28 @@ def glob_paths(base: Path, patterns: list[str]) -> list[Path]:
     return sorted(set(results))
 
 
-def discover_items(plugin: Plugin, item_type: str) -> list[tuple[str, Path]]:
+def discover_skills(plugin: Plugin) -> list[tuple[str, Path]]:
     """
-    Discover skills/extensions from a plugin.
+    Discover skills from a plugin.
 
-    Returns list of (item_name, item_path) tuples.
+    Returns list of (skill_name, skill_path) tuples.
     """
     plugin_dir = PLUGINS_DIR / plugin.dir_name
     if not plugin_dir.exists():
         return []
 
-    if item_type == "skills":
-        patterns = plugin.skills_path
-        enabled = plugin.skills
-    elif item_type == "extensions":
-        patterns = plugin.extensions_path
-        enabled = plugin.extensions
-    else:
-        raise ValueError(f"Unknown item type: {item_type}")
-
-    if len(enabled) == 0:
+    if len(plugin.skills) == 0:
         return []
 
-    include_all = "*" in enabled
+    include_all = "*" in plugin.skills
 
     items = []
-    for path in glob_paths(plugin_dir, patterns):
-        if path.is_dir():
-            name = path.name
-        elif path.is_file() and path.suffix == ".ts":
-            name = path.stem
-        else:
+    for path in glob_paths(plugin_dir, plugin.skills_path):
+        if not path.is_dir():
             continue
 
-        if not include_all and name not in enabled:
+        name = path.name
+        if not include_all and name not in plugin.skills:
             continue
 
         final_name = f"{plugin.alias}-{name}" if plugin.alias else name
@@ -262,7 +243,7 @@ def build_skills(plugins: dict[str, Plugin]):
 
     # Process plugins
     for plugin in plugins.values():
-        for name, path in discover_items(plugin, "skills"):
+        for name, path in discover_skills(plugin):
             if name in built:
                 print(
                     f"    Warning: Skill '{name}' already exists, skipping duplicate from {plugin.name}"
@@ -312,60 +293,6 @@ def install_skills():
         print(f"  {name}: {count} skills -> {dest}")
 
 
-def install_extensions(plugins: dict[str, Plugin]):
-    """Install extensions from plugins and custom extensions directory."""
-    print("Installing extensions...")
-
-    dest = HOME / ".pi" / "agent" / "extensions"
-
-    if dest.exists():
-        shutil.rmtree(dest)
-    dest.mkdir(parents=True, exist_ok=True)
-
-    installed = set()
-
-    # Extensions from plugins
-    for plugin in plugins.values():
-        for name, path in discover_items(plugin, "extensions"):
-            if name in installed:
-                print(
-                    f"    Warning: Extension '{name}' already exists, skipping duplicate from {plugin.name}"
-                )
-                continue
-
-            dest_ext = dest / name
-            remove_path(dest_ext)
-            dest_ext.mkdir(parents=True)
-
-            if path.is_file():
-                shutil.copy(path, dest_ext / "index.ts")
-            else:
-                shutil.copytree(path, dest_ext, dirs_exist_ok=True)
-
-            print(f"  {name} (from {plugin.name})")
-            installed.add(name)
-
-    # Custom extensions
-    custom_extensions = EXTENSIONS_DIR / "pi"
-    if custom_extensions.exists():
-        for ext_dir in sorted(custom_extensions.iterdir()):
-            if ext_dir.is_dir():
-                name = ext_dir.name
-                if name in installed:
-                    print(
-                        f"    Warning: Custom extension '{name}' conflicts with plugin extension"
-                    )
-
-                dest_ext = dest / name
-                remove_path(dest_ext)
-                shutil.copytree(ext_dir, dest_ext)
-
-                print(f"  {name} (custom)")
-                installed.add(name)
-
-    print(f"  Installed {len(installed)} extensions")
-
-
 def install_global_agents_md():
     """Install global AGENTS.md for unified agents path."""
     print("Installing global AGENTS.md...")
@@ -390,12 +317,6 @@ def clean(plugins: dict[str, Plugin]):
             shutil.rmtree(path)
             print(f"  Removed {path}")
 
-    # Clean extensions
-    ext_dest = HOME / ".pi" / "agent" / "extensions"
-    if ext_dest.exists():
-        shutil.rmtree(ext_dest)
-        print(f"  Removed {ext_dest}")
-
     # Clean build directory
     if BUILD_DIR.exists():
         shutil.rmtree(BUILD_DIR)
@@ -418,7 +339,6 @@ def main():
             "build",
             "install",
             "install-skills",
-            "install-extensions",
             "clean",
             "submodule-init",
         ],
@@ -436,14 +356,11 @@ def main():
         init_submodules()
         build_skills(plugins)
         install_skills()
-        install_extensions(plugins)
         install_global_agents_md()
         print("\nAll done!")
     elif args.command == "install-skills":
         build_skills(plugins)
         install_skills()
-    elif args.command == "install-extensions":
-        install_extensions(plugins)
     elif args.command == "clean":
         clean(plugins)
 

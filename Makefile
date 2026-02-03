@@ -1,5 +1,5 @@
 # dotagents Makefile
-# Installs skills and extensions for AI coding agents
+# Installs skills for AI coding agents
 #
 # Configuration is in plugins.toml. Run `make install` to build and install.
 # Requires Python 3.11+ (uses tomllib from stdlib).
@@ -7,20 +7,19 @@
 PYTHON := python3
 BUILD_SCRIPT := $(CURDIR)/scripts/build.py
 
-.PHONY: all install install-skills install-extensions build clean help submodule-init plugin-update check-python
+.PHONY: all install install-skills build clean help submodule-init plugin-update check-python
 
 all: help
 
 help:
-	@echo "dotagents - Skills and Extensions Installer"
+	@echo "dotagents - Skills Installer"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make install            Initialize submodules and install skills and extensions"
+	@echo "  make install            Initialize submodules and install skills"
 	@echo "  make install-skills     Install skills only"
-	@echo "  make install-extensions Install extensions only (Pi agent)"
 	@echo "  make build              Build skills (without installing)"
 	@echo "  make plugin-update      Update all plugin submodules to latest"
-	@echo "  make clean              Remove all installed skills, extensions, and build artifacts"
+	@echo "  make clean              Remove all installed skills and build artifacts"
 	@echo "  make help               Show this help message"
 	@echo ""
 	@echo "Configuration: plugins.toml"
@@ -35,7 +34,7 @@ check-python:
 
 install: check-python
 	@$(PYTHON) $(BUILD_SCRIPT) install
-	@echo "All skills and extensions installed"
+	@echo "All skills installed"
 
 submodule-init:
 	@$(PYTHON) $(BUILD_SCRIPT) submodule-init
@@ -45,9 +44,6 @@ build: check-python
 
 install-skills: check-python
 	@$(PYTHON) $(BUILD_SCRIPT) install-skills
-
-install-extensions: check-python
-	@$(PYTHON) $(BUILD_SCRIPT) install-extensions
 
 clean: check-python
 	@$(PYTHON) $(BUILD_SCRIPT) clean
