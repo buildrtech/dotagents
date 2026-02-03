@@ -3,7 +3,6 @@ name: executing-plans
 description: Use when you have a written implementation plan to execute
 metadata:
   category: superpowers
-  agents: codex, pi
 ---
 
 # Executing Plans

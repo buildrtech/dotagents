@@ -6,43 +6,45 @@ This file provides guidance for AI assistants working with this codebase.
 
 This repository manages reusable skills for AI coding agents including:
 - **Claude Code** (Anthropic)
+- **OpenCode**
 - **Pi Coding Agent** (badlogic)
 - **Codex CLI** (OpenAI)
-- **Amp** (Sourcegraph)
 
 Skills are specialized instruction sets that guide AI agents through specific tasks.
+
+## Install Paths
+
+| Agent | Skills Path |
+|-------|-------------|
+| Claude Code | `~/.claude/skills/` |
+| OpenCode, Pi, Codex | `~/.agents/skills/` |
 
 ## Repository Structure
 
 ```
 dotagents/
-├── plugins.toml                    # Plugin configuration (external skill sources)
-├── plugins/                        # Git submodules (skill sources)
-├── skills/                         # Custom skills (local)
+├── plugins.toml              # Plugin configuration (external skill sources)
+├── plugins/                  # Git submodules (skill sources)
+├── skills/                   # Custom skills (local)
 │   └── <skill-name>/
-│       ├── SKILL.md                # Skill definition (YAML frontmatter + markdown)
-│       └── <additional files>      # Supporting scripts/resources
-├── skill-overrides/                # Agent-specific appends
-│   └── <skill>-<agent>.md          # Appended to SKILL.md during build
-├── configs/                        # Agent configurations
-│   └── AGENTS.md                   # Global AGENTS.md for agents
+│       ├── SKILL.md          # Skill definition (YAML frontmatter + markdown)
+│       └── <additional files>
+├── configs/
+│   └── AGENTS.md             # Global AGENTS.md installed to ~/.agents/
 ├── scripts/
-│   └── build.py                    # Python build system (requires Python 3.11+)
-├── build/                          # Generated during build (gitignored)
+│   └── build.py              # Python build system (requires Python 3.11+)
+├── build/                    # Generated during build (gitignored)
 ├── docs/
-│   ├── plans/                      # Implementation plans
-│   └── design/                     # Design documents
-├── Makefile                        # Build automation
-└── README.md                       # User documentation
+│   ├── plans/                # Implementation plans
+│   └── design/               # Design documents
+├── Makefile                  # Build automation
+└── README.md                 # User documentation
 ```
 
 ## Key Concepts
 
 ### Skills
 Skills follow the [Agent Skills specification](https://agentskills.io/specification.md). When creating or modifying skills, fetch the latest specification for current format requirements.
-
-### Skill Overrides
-Files in `skill-overrides/<skill>-<agent>.md` are **appended** to the skill's SKILL.md during build. This allows agent-specific customizations.
 
 ## Development Workflow
 
@@ -65,19 +67,9 @@ make install
 - Follow the [Agent Skills specification](https://agentskills.io/specification.md)
 - Include workflow diagrams (graphviz dot format) for complex processes
 - Document prerequisites, step-by-step processes, and common mistakes
-- Use the `agents` frontmatter field to limit which agents receive a skill
 
 ### Skill Scripts (Python)
 Use [uv inline script metadata](https://docs.astral.sh/uv/guides/scripts/) for dependency management.
-
-## Installation Locations
-
-| Agent | Skills |
-|-------|--------|
-| Amp | `~/.config/agents/skills/` |
-| Claude Code | `~/.claude/skills/` |
-| Codex CLI | `~/.codex/skills/` |
-| Pi Agent | `~/.pi/agent/skills/` |
 
 ## Adding New Content
 

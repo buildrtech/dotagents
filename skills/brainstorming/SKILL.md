@@ -3,7 +3,6 @@ name: brainstorming
 description: "You use this before creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
 metadata:
   category: superpowers
-  agents: codex, pi
 ---
 
 # Brainstorming Ideas Into Designs
