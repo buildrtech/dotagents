@@ -9,7 +9,7 @@ Premium B2B interfaces through refinement, not decoration. Power users live in y
 
 Apply the mindset of a designer-turned-developer: create professional, cohesive interfaces that feel intentional and refined, even without mockups or design specs.
 
-**IMPORTANT**: Invoke `Skill(skill: "typescript-react")` before writing any TypeScript/React code.
+**IMPORTANT**: Invoke `@react` before writing any TypeScript/React code.
 
 ## Activation
 
@@ -21,7 +21,7 @@ This skill activates when:
 
 ## Dependencies
 
-**Invokes:** `Skill(skill: "typescript-react")` before writing any TypeScript/React code
+**Invokes:** `@react` before writing any TypeScript/React code
 
 ---
 
