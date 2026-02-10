@@ -50,18 +50,6 @@ These methodology skills improve AI agent effectiveness:
 
 See [Agent Skills specification](https://agentskills.io/specification.md) for format details.
 
-## Adding External Plugins
-
-1. Add submodule: `git submodule add <url> plugins/<owner>-<repo>`
-2. Configure in `plugins.toml`:
-   ```toml
-   ["owner/repo"]
-   url = "https://github.com/owner/repo"
-   skills = ["*"]  # or specific skill names
-   ```
-3. Run `make install`
-
 ## Requirements
 
-- Python 3.11+ (uses `tomllib` from stdlib)
-- Git (for submodule management)
+- Python 3.11+

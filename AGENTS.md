@@ -23,9 +23,7 @@ Skills are specialized instruction sets that guide AI agents through specific ta
 
 ```
 dotagents/
-├── plugins.toml              # Plugin configuration (external skill sources)
-├── plugins/                  # Git submodules (skill sources)
-├── skills/                   # Custom skills (local)
+├── skills/                   # Custom skills
 │   └── <skill-name>/
 │       ├── SKILL.md          # Skill definition (YAML frontmatter + markdown)
 │       └── <additional files>
@@ -78,8 +76,3 @@ Use [uv inline script metadata](https://docs.astral.sh/uv/guides/scripts/) for d
 2. Create `skills/<skill-name>/SKILL.md` following the specification
 3. Add any supporting files to the same directory
 4. Run `make install` to build and install
-
-### Adding a Plugin
-1. Add submodule: `git submodule add <url> plugins/<owner>-<repo>`
-2. Add plugin configuration to `plugins.toml`
-3. Run `make install`
