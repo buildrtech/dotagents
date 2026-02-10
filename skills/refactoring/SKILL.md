@@ -1,7 +1,8 @@
 ---
 name: refactoring
 description: Audit codebase for refactoring opportunities - dead code, type improvements, test gaps, code smells, elegance, performance
-allowed-tools: Bash(*), Read(**), Glob(*), Grep(*)
+metadata:
+  category: superpowers
 ---
 
 # Refactoring Audit
@@ -35,7 +36,7 @@ test -f Gemfile && rg "sorbet" Gemfile  # Sorbet
 
 ### Step 2: Load Language Files
 
-Based on detected languages, read the relevant files from `~/.claude/skills/refactoring/`:
+Based on detected languages, read the relevant files from this skill directory (`skills/refactoring/`):
 
 | Detected | Load |
 |----------|------|
