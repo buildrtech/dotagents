@@ -15,22 +15,51 @@ make install
 | Claude Code | `~/.claude/skills/` |
 | OpenCode, Pi, Codex | `~/.agents/skills/` |
 
-## Super Power Skills
+## Skill Catalog
 
-These methodology skills improve AI agent effectiveness:
+### Methodology
 
 | Skill | Description |
 |-------|-------------|
-| `brainstorming` | Explore ideas before implementation through collaborative dialogue |
-| `writing-plans` | Create detailed implementation plans with bite-sized tasks |
-| `executing-plans` | Execute plans task-by-task with verification |
-| `test-driven-development` | Write tests first, watch them fail, implement minimally |
-| `systematic-debugging` | Find root cause before attempting fixes |
-| `verification-before-completion` | Evidence before claims, always |
-| `dispatching-parallel-agents` | Run multiple independent investigations concurrently |
-| `receiving-code-review` | Technical rigor when implementing feedback |
-| `requesting-code-review` | Verify work meets requirements before merging |
-| `semantic-commit` | Conventional commits for clear history |
+| `brainstorming` | Explore intent and options before implementation |
+| `writing-plans` | Create execution-ready implementation plans |
+| `executing-plans` | Execute plan tasks continuously and report blockers |
+| `dispatching-parallel-agents` | Split independent work across parallel agents |
+
+### Quality
+
+| Skill | Description |
+|-------|-------------|
+| `test-driven-development` | Test-first development with strict red-green-refactor |
+| `systematic-debugging` | Root-cause debugging workflow before fixes |
+| `verification-before-completion` | Fresh verification evidence before completion claims |
+| `receiving-code-review` | Evaluate review feedback rigorously before changes |
+| `requesting-code-review` | Request structured review before merge/progression |
+| `code-review` | Six-domain review framework with P0–P4 severities |
+| `semantic-commit` | Conventional Commit workflow with hygiene gates |
+| `remove-slop` | Remove debug noise, TODOs, and incomplete artifacts |
+| `refactoring` | Multi-language refactoring audit and prioritization |
+
+### Frontend / Docs / Prompting
+
+| Skill | Description |
+|-------|-------------|
+| `react` | React-specific component/event/wrapper conventions |
+| `frontend-design` | Information-dense, professional B2B UI guidance |
+| `document-writing` | Verification-first technical documentation writing |
+| `prompt-writing` | Anthropic-oriented prompt and skill authoring patterns |
+
+### Planning / Issue Management
+
+| Skill | Description |
+|-------|-------------|
+| `issue-writing` | Universal user-story and acceptance-criteria issue design |
+| `beads-create` | beads CLI workflow (`br create`, `br update`, `br dep add`) |
+
+### CI / Build
+
+| Skill | Description |
+|-------|-------------|
 | `fetch-ci-build` | Fetch CI build results and diagnose failures across CI providers |
 
 ## Commands
