@@ -39,6 +39,67 @@ BEFORE claiming any status or expressing satisfaction:
 Skip any step = lying, not verifying
 ```
 
+## Practical Verification Checklist
+
+Run the checks that match your change. Verification is contextual, but never optional.
+
+### Automated Tests
+
+Run relevant automated tests first (unit/integration/e2e as applicable).
+
+Examples:
+- `npm test`
+- `pytest`
+- `go test ./...`
+
+Report concrete evidence:
+- command executed
+- pass/fail counts
+- exit code
+
+### Linters and Type Checks
+
+Run static checks separately from tests.
+
+Examples:
+- `npm run lint`
+- `npm run typecheck`
+- `ruff check .`
+- `mypy .`
+
+Linters passing does **not** prove compilation/runtime correctness. Type checks passing does **not** prove behavior.
+
+### Manual UI Testing (when required)
+
+Use this decision split:
+
+- **UI changes (web/mobile/desktop):** run automated checks **and** verify manually in browser/app flows affected.
+  - Prefer the **Playwright CLI skill** for browser validation.
+  - Do **not** rely on MCP server-based browsing as your default verification path.
+- **CLI/library/backend-only changes with no UI impact:** automated tests may be sufficient if they fully cover changed behavior.
+
+For manual checks, state exactly what you exercised (pages, inputs, expected outcomes).
+
+### Clean State Checklist
+
+Before claiming completion or committing:
+
+- [ ] Remove debug statements (`console.log`, `print`, ad-hoc tracing)
+- [ ] Resolve or intentionally track TODO/FIXME/HACK comments
+- [ ] Remove commented-out dead code
+- [ ] Remove half-implemented branches and placeholder paths
+- [ ] Ensure no skipped/disabled tests were introduced to force green
+
+Optional hygiene pass: run `@remove-slop` before final completion claims.
+
+### Verification-Proof Claim Examples
+
+Good claim:
+- "Ran `npm test` (128 passed, 0 failed), `npm run lint` (0 issues), and manual checkout flow in Chrome; all checks passed."
+
+Bad claim:
+- "Looks good now, should be fixed."
+
 ## Common Failures
 
 | Claim | Requires | Not Sufficient |
