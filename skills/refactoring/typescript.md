@@ -1,5 +1,58 @@
 # TypeScript
 
+## Scope: Audit + New Code Guidance
+
+Use this file in two modes:
+- **Audit mode:** detect existing issues with the search commands below.
+- **New code mode:** apply the policy rules below when writing or refactoring TypeScript.
+
+## Type Safety Policies (for refactors and new code)
+
+### Cast Avoidance Policy
+
+Avoid escape hatches except at tightly-scoped, documented interop boundaries:
+- `as any`
+- `as unknown as`
+- `@ts-ignore` / `@ts-expect-error`
+
+Preferred order:
+1. Fix the source types
+2. Add narrowing/type guards
+3. Use generics to express intent
+4. Use a minimal adapter cast only when third-party typings are wrong
+
+### Null Narrowing Policy
+
+Assume `strictNullChecks` is enabled and write control flow accordingly.
+
+Prefer:
+- early returns for nullable values
+- `if`/`switch`/`in` narrowing
+- `??` over `||` for defaults where `0`, `false`, or `""` are valid
+
+Avoid non-null assertions (`!`) unless correctness is proven in nearby control flow.
+
+### Discriminated Union Handling Policy
+
+Represent variants as discriminated union types and handle via exhaustive switches.
+
+Requirements:
+- include a stable discriminant (`kind`, `type`, etc.)
+- narrow through control flow, not casts
+- include `never` exhaustiveness checks when branching
+
+### Generic-Parameter-Over-Casting Policy
+
+Prefer explicit generic parameters over result casting.
+
+Good:
+- `parseThing<MyType>(input)`
+
+Avoid:
+- `parseThing(input) as MyType`
+
+If generics are hard to express, improve API signatures before adding casts.
+
 ## Dead Code
 
 ```bash
