@@ -1,7 +1,8 @@
 ---
 name: code-review
 description: Thorough code review surfacing all findings. Deep analysis across safety, security, performance, operations, testing, and code organization.
-allowed-tools: Read(**), Grep(*), Glob(*), Bash(*), WebSearch, WebFetch
+metadata:
+  category: superpowers
 ---
 
 # Code Review
