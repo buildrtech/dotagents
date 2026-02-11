@@ -62,6 +62,13 @@ make install
 |-------|-------------|
 | `fetch-ci-build` | Fetch CI build results and diagnose failures across CI providers |
 
+## Beads Extension (runtime)
+
+- Runtime entry: `extensions/beads/index.ts`
+- Provides deterministic beads tool execution plus interactive `/beads` command wrappers
+- Includes hook behavior for mode status, priming, dirty-close guard, and context reminders
+- Extension-vs-skill split: runtime mechanics live in extension, reasoning remains in `@issue-writing` and `@beads-create`
+
 ## Commands
 
 | Command | Description |
