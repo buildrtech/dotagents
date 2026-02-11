@@ -183,7 +183,7 @@ export default function beadsExtension(pi: ExtensionAPI) {
     const [info, listResult, inProgressResult] = await Promise.all([
       runBr(pi, ["info", "--json"]),
       runBr(pi, ["list", "--json"]),
-      runBr(pi, ["list", "--status", "in_progress", "--json"]),
+      runBr(pi, ["list", "--status", "in_progress", "--sort", "updated_at", "-r", "--json"]),
     ]);
 
     if (info.code !== 0) {
