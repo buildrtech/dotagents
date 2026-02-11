@@ -166,7 +166,7 @@ function commandOut(
 }
 
 export default function beadsExtension(pi: ExtensionAPI) {
-  type UiContext = { ui: { setStatus: (key: string, value?: string) => void; setWidget: (key: string, value?: string[] | undefined) => void } };
+  type UiContext = { ui: { setStatus: (key: string, value?: string) => void } };
 
   let isBeadsProject = false;
   let shouldPrime = false;
@@ -175,7 +175,6 @@ export default function beadsExtension(pi: ExtensionAPI) {
 
   const clearBeadsModeUi = (ctx: UiContext) => {
     ctx.ui.setStatus("beads-mode", undefined);
-    ctx.ui.setWidget("beads-mode", undefined);
   };
 
   const refreshBeadsStatus = async (ctx: UiContext) => {
@@ -201,11 +200,6 @@ export default function beadsExtension(pi: ExtensionAPI) {
     }
 
     ctx.ui.setStatus("beads-mode", `beads: ${cachedModeText} · ${issueCount} issue(s)`);
-    ctx.ui.setWidget("beads-mode", [
-      `beads mode: ${cachedModeText}`,
-      `issues: ${issueCount}`,
-      "use /beads for interactive issue actions",
-    ]);
   };
 
   const maybeNudgeCommitAfterClose = async (ctx: {
