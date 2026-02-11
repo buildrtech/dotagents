@@ -8,6 +8,9 @@ import {
   shouldShowContextReminder,
   buildBeadsPrimeMessage,
   formatIssueLabel,
+  summarizeInProgressIssue,
+  formatBeadsModeStatus,
+  DIRTY_TREE_CLOSE_WARNING,
 } from "./lib.ts";
 
 test("parseBrInfoJson parses mode and issue_count", () => {
@@ -23,6 +26,13 @@ test("parseBrReadyJson handles br list payload", () => {
   const issues = parseBrReadyJson('[{"id":"abc","title":"Do thing","type":"task","priority":1,"status":"open"}]');
   assert.equal(issues.length, 1);
   assert.equal(issues[0]?.id, "abc");
+});
+
+test("parseBrReadyJson handles issue_type payload from br list --json", () => {
+  const issues = parseBrReadyJson('[{"id":"bd-123","title":"Do thing","issue_type":"feature","priority":1,"status":"in_progress"}]');
+  assert.equal(issues.length, 1);
+  assert.equal(issues[0]?.id, "bd-123");
+  assert.equal(issues[0]?.type, "feature");
 });
 
 test("detectTrackingMode maps check-ignore codes", () => {
@@ -62,4 +72,30 @@ test("formatIssueLabel includes id, priority, and title", () => {
   assert.match(label, /abc/);
   assert.match(label, /P1/);
   assert.match(label, /Do thing/);
+});
+
+test("summarizeInProgressIssue reports first id and overflow count", () => {
+  assert.equal(summarizeInProgressIssue([]), "none");
+  assert.equal(summarizeInProgressIssue([{ id: "bd-1", title: "One" }]), "bd-1");
+  assert.equal(
+    summarizeInProgressIssue([
+      { id: "bd-1", title: "One" },
+      { id: "bd-2", title: "Two" },
+      { id: "bd-3", title: "Three" },
+    ]),
+    "bd-1 +2",
+  );
+});
+
+test("formatBeadsModeStatus includes in-progress summary", () => {
+  const status = formatBeadsModeStatus({
+    modeText: "stealth (sqlite)",
+    issueCount: 12,
+    inProgressIssues: [{ id: "bd-1", title: "One" }],
+  });
+  assert.equal(status, "beads: stealth (sqlite) · 12 issue(s) · in-progress: bd-1");
+});
+
+test("dirty tree close warning text includes semantic-commit guidance", () => {
+  assert.match(DIRTY_TREE_CLOSE_WARNING, /semantic-commit/);
 });

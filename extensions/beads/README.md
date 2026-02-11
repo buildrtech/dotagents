@@ -22,7 +22,7 @@ Provide extension-level execution UX for beads while keeping planning/reasoning 
 
 ## Hooks included
 
-- `session_start`: detect beads project mode and publish `beads-mode` status line
+- `session_start`: detect beads project mode and publish `beads-mode` status line (mode, total issues, current in-progress issue)
 - `session_before_compact`: re-arm one-time beads priming
 - `before_agent_start`: inject hidden `beads-prime` message with beads guardrails
 - `tool_call`: block `br close` if git working tree is dirty
