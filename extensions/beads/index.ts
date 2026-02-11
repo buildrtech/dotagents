@@ -161,7 +161,7 @@ function commandOut(
   if (ctx.hasUI) {
     ctx.ui.notify(message, level);
   } else {
-    console.log(message);
+    process.stdout.write(`${message}\n`);
   }
 }
 
@@ -206,6 +206,26 @@ export default function beadsExtension(pi: ExtensionAPI) {
       `issues: ${issueCount}`,
       "use /beads for interactive issue actions",
     ]);
+  };
+
+  const maybeNudgeCommitAfterClose = async (ctx: {
+    hasUI: boolean;
+    ui: { notify: (message: string, level: "info" | "warning" | "error") => void };
+  }) => {
+    const status = await runGit(pi, ["status", "--porcelain"]);
+    if (status.code !== 0) {
+      return;
+    }
+
+    if (!status.stdout.trim()) {
+      return;
+    }
+
+    commandOut(
+      ctx,
+      "Issue closed. You still have uncommitted changes — consider running @semantic-commit before continuing.",
+      "warning",
+    );
   };
 
   pi.registerTool({
@@ -254,6 +274,9 @@ export default function beadsExtension(pi: ExtensionAPI) {
 
         if (mutatingActions.has(input.action)) {
           refreshBeadsStatus(ctx).catch(() => {});
+        }
+        if (input.action === "close") {
+          await maybeNudgeCommitAfterClose(ctx);
         }
 
         return {
@@ -437,10 +460,10 @@ export default function beadsExtension(pi: ExtensionAPI) {
 
       if (!ctx.hasUI) {
         if (!issues.length) {
-          console.log("No ready issues.");
+          process.stdout.write("No ready issues.\n");
           return;
         }
-        console.log(issues.map((issue) => `${issue.id} ${issue.title}`).join("\n"));
+        process.stdout.write(`${issues.map((issue) => `${issue.id} ${issue.title}`).join("\n")}\n`);
         return;
       }
 
@@ -481,6 +504,8 @@ export default function beadsExtension(pi: ExtensionAPI) {
             ctx.ui.notify(`Failed to claim ${issue.id}: ${summarizeExecFailure(claim)}`, "error");
             continue;
           }
+
+          await refreshBeadsStatus(ctx);
 
           ctx.ui.setEditorText(
             [
@@ -544,6 +569,9 @@ export default function beadsExtension(pi: ExtensionAPI) {
             ctx.ui.notify(`Failed to close ${issue.id}: ${summarizeExecFailure(closeResult)}`, "error");
             continue;
           }
+
+          await refreshBeadsStatus(ctx);
+          await maybeNudgeCommitAfterClose(ctx);
 
           ctx.ui.notify(`Closed ${issue.id}.`, "info");
           return;
@@ -612,6 +640,7 @@ export default function beadsExtension(pi: ExtensionAPI) {
         return;
       }
 
+      await refreshBeadsStatus(ctx);
       commandOut(ctx, `Claimed ${id} (in_progress).`, "info");
     },
   });
@@ -641,6 +670,8 @@ export default function beadsExtension(pi: ExtensionAPI) {
         return;
       }
 
+      await refreshBeadsStatus(ctx);
+      await maybeNudgeCommitAfterClose(ctx);
       commandOut(ctx, `Closed ${id}.`, "info");
     },
   });
