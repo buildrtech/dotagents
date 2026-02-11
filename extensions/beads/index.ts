@@ -226,6 +226,20 @@ export default function beadsExtension(pi: ExtensionAPI) {
     }
 
     commandOut(ctx, DIRTY_TREE_CLOSE_WARNING, "warning");
+
+    // Deliver to model context so the agent acts on it.
+    // Tool-path callers also embed this in tool content, but command-path
+    // callers (/beads-close, /beads picker) have no tool result — this
+    // ensures the model always sees the warning.
+    pi.sendMessage(
+      {
+        customType: "beads-dirty-tree-warning",
+        content: DIRTY_TREE_CLOSE_WARNING,
+        display: false,
+      },
+      { deliverAs: "nextTurn" },
+    );
+
     return DIRTY_TREE_CLOSE_WARNING;
   };
 
@@ -769,7 +783,22 @@ export default function beadsExtension(pi: ExtensionAPI) {
       })
     ) {
       contextReminderShown = true;
-      ctx.ui.notify("Context is above 70%. Consider /compact soon to preserve room for implementation details.", "warning");
+
+      const reminderText =
+        "Context is above 70%. Checkpoint your current progress to the beads issue now, then run /compact.";
+
+      // Human sees it immediately
+      ctx.ui.notify(reminderText, "warning");
+
+      // Model sees it on the next turn so it can act
+      pi.sendMessage(
+        {
+          customType: "beads-context-warning",
+          content: reminderText,
+          display: false,
+        },
+        { deliverAs: "followUp", triggerTurn: true },
+      );
     }
   });
 }
