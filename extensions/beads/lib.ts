@@ -8,6 +8,9 @@ export type BrIssueSummary = {
   status?: string;
 };
 
+export const DIRTY_TREE_CLOSE_WARNING =
+  "Warning: Issue closed. You still have uncommitted changes — run @semantic-commit before continuing.";
+
 export function parseBrInfoJson(json: string): { mode: string; issueCount: number } | null {
   try {
     const parsed = JSON.parse(json) as { mode?: unknown; issue_count?: unknown };
@@ -69,7 +72,7 @@ export function buildBeadsPrimeMessage(): string {
     "- br ready",
     "- br list --status in_progress",
     "- br show <id>",
-    "- br close <id> --reason \"Verified: ...\"",
+    '- br close <id> --reason "Verified: ..."',
   ].join("\n");
 }
 
@@ -79,12 +82,27 @@ export function formatIssueLabel(issue: BrIssueSummary): string {
   return `[${priority}] ${issue.id} (${type}) ${issue.title}`;
 }
 
+export function summarizeInProgressIssue(issues: BrIssueSummary[]): string {
+  if (!issues.length) return "none";
+  if (issues.length === 1) return issues[0]!.id;
+  return `${issues[0]!.id} +${issues.length - 1}`;
+}
+
+export function formatBeadsModeStatus(args: {
+  modeText: string;
+  issueCount: number;
+  inProgressIssues: BrIssueSummary[];
+}): string {
+  return `beads: ${args.modeText} · ${args.issueCount} issue(s) · in-progress: ${summarizeInProgressIssue(args.inProgressIssues)}`;
+}
+
 function normalizeIssueRow(row: unknown): BrIssueSummary | null {
   if (!row || typeof row !== "object") return null;
   const data = row as {
     id?: unknown;
     title?: unknown;
     type?: unknown;
+    issue_type?: unknown;
     priority?: unknown;
     status?: unknown;
   };
@@ -95,7 +113,7 @@ function normalizeIssueRow(row: unknown): BrIssueSummary | null {
   return {
     id: data.id,
     title,
-    type: typeof data.type === "string" ? data.type : undefined,
+    type: typeof data.type === "string" ? data.type : typeof data.issue_type === "string" ? data.issue_type : undefined,
     priority: typeof data.priority === "number" ? data.priority : undefined,
     status: typeof data.status === "string" ? data.status : undefined,
   };

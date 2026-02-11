@@ -5,6 +5,8 @@ import { Type } from "@sinclair/typebox";
 import {
   buildBeadsPrimeMessage,
   detectTrackingMode,
+  DIRTY_TREE_CLOSE_WARNING,
+  formatBeadsModeStatus,
   formatIssueLabel,
   isBrCloseCommand,
   parseBrInfoJson,
@@ -178,7 +180,12 @@ export default function beadsExtension(pi: ExtensionAPI) {
   };
 
   const refreshBeadsStatus = async (ctx: UiContext) => {
-    const info = await runBr(pi, ["info", "--json"]);
+    const [info, listResult, inProgressResult] = await Promise.all([
+      runBr(pi, ["info", "--json"]),
+      runBr(pi, ["list", "--json"]),
+      runBr(pi, ["list", "--status", "in_progress", "--json"]),
+    ]);
+
     if (info.code !== 0) {
       clearBeadsModeUi(ctx);
       return;
@@ -187,9 +194,9 @@ export default function beadsExtension(pi: ExtensionAPI) {
     const parsedInfo = parseBrInfoJson(info.stdout);
 
     // br info issue_count includes tombstones; use br list for live count
-    const listResult = await runBr(pi, ["list", "--json"]);
     const liveIssues = listResult.code === 0 ? parseBrReadyJson(listResult.stdout) : [];
     const issueCount = liveIssues.length;
+    const inProgressIssues = inProgressResult.code === 0 ? parseBrReadyJson(inProgressResult.stdout) : [];
 
     if (!cachedModeText) {
       const checkIgnore = await runGit(pi, ["check-ignore", ".beads/"]);
@@ -199,27 +206,27 @@ export default function beadsExtension(pi: ExtensionAPI) {
       cachedModeText = `${modeLabel} (${backendMode})`;
     }
 
-    ctx.ui.setStatus("beads-mode", `beads: ${cachedModeText} · ${issueCount} issue(s)`);
+    ctx.ui.setStatus(
+      "beads-mode",
+      formatBeadsModeStatus({ modeText: cachedModeText, issueCount, inProgressIssues }),
+    );
   };
 
   const maybeNudgeCommitAfterClose = async (ctx: {
     hasUI: boolean;
     ui: { notify: (message: string, level: "info" | "warning" | "error") => void };
-  }) => {
+  }): Promise<string | null> => {
     const status = await runGit(pi, ["status", "--porcelain"]);
     if (status.code !== 0) {
-      return;
+      return null;
     }
 
     if (!status.stdout.trim()) {
-      return;
+      return null;
     }
 
-    commandOut(
-      ctx,
-      "Issue closed. You still have uncommitted changes — consider running @semantic-commit before continuing.",
-      "warning",
-    );
+    commandOut(ctx, DIRTY_TREE_CLOSE_WARNING, "warning");
+    return DIRTY_TREE_CLOSE_WARNING;
   };
 
   pi.registerTool({
@@ -269,18 +276,25 @@ export default function beadsExtension(pi: ExtensionAPI) {
         if (mutatingActions.has(input.action)) {
           refreshBeadsStatus(ctx).catch(() => {});
         }
+
+        let closeWarning: string | null = null;
         if (input.action === "close") {
-          await maybeNudgeCommitAfterClose(ctx);
+          closeWarning = await maybeNudgeCommitAfterClose(ctx);
         }
 
+        const outputText = closeWarning
+          ? `${result.stdout || "OK"}\n\n${closeWarning}`
+          : result.stdout || "OK";
+
         return {
-          content: [{ type: "text" as const, text: result.stdout || "OK" }],
+          content: [{ type: "text" as const, text: outputText }],
           details: {
             action: input.action,
             command: `br ${args.join(" ")}`,
             stdout: result.stdout,
             stderr: result.stderr,
             exitCode: result.code,
+            closeWarning,
           },
         };
       };
