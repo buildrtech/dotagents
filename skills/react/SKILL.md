@@ -16,7 +16,46 @@ This skill activates when:
 
 For broad TypeScript casting/null/generic policy, apply `@refactoring` and read `skills/refactoring/typescript.md`.
 
-## 1. React Events
+## 1. Effects: prefer derivation and event handlers
+
+Before adding `useEffect`, check React guidance: [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect).
+
+- Derive values during render when they come from props/state.
+- Handle user-triggered logic inside event handlers.
+- Use effects only to synchronize with external systems (network, subscriptions, DOM APIs, timers).
+
+Bad (redundant derived state in an effect):
+
+```tsx
+const [fullName, setFullName] = useState("");
+useEffect(() => {
+  setFullName(`${firstName} ${lastName}`);
+}, [firstName, lastName]);
+```
+
+Good (derive in render):
+
+```tsx
+const fullName = `${firstName} ${lastName}`;
+```
+
+Bad (event-triggered work in an effect):
+
+```tsx
+useEffect(() => {
+  if (shouldSubmit) submitForm();
+}, [shouldSubmit]);
+```
+
+Good (run user-triggered work in the event handler):
+
+```tsx
+const onSubmit = () => {
+  submitForm();
+};
+```
+
+## 2. React Events
 
 Do not fabricate `React.ChangeEvent`, `KeyboardEvent`, etc. from plain objects.
 
@@ -37,7 +76,7 @@ type ToggleProps = {
 };
 ```
 
-## 2. Wrapper Components
+## 3. Wrapper Components
 
 When wrapping third-party components:
 - Omit props you control internally
@@ -54,7 +93,7 @@ type MyToggleProps = Omit<
 };
 ```
 
-## 3. Component-Level Type Safety Patterns
+## 4. Component-Level Type Safety Patterns
 
 When resolving React + TS errors:
 1. Explain mismatch in plain language
@@ -63,6 +102,13 @@ When resolving React + TS errors:
 4. Keep adapters local when integrating awkward third-party component types
 
 Prefer explicit prop contracts over ad-hoc inline object shapes for reusable components.
+
+## Verification checklist
+
+Before adding `useEffect`, verify:
+- Can this value be derived during render from existing props/state?
+- Can this logic run directly in the event handler that triggers it?
+- Is this effect truly synchronizing with an external system?
 
 ## Appendices
 
