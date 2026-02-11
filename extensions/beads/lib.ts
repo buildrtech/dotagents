@@ -67,6 +67,7 @@ export type BrComment = {
 };
 
 export type BrShowIssue = BrIssueSummary & {
+  description?: string;
   comments?: BrComment[];
 };
 
@@ -79,8 +80,10 @@ export function parseBrShowJson(json: string): BrShowIssue | null {
     const base = normalizeIssueRow(row);
     if (!base) return null;
 
+    const raw = row as { description?: unknown; comments?: unknown };
+    const description = typeof raw.description === "string" && raw.description.trim() ? raw.description : undefined;
+
     const comments: BrComment[] = [];
-    const raw = row as { comments?: unknown };
     if (Array.isArray(raw.comments)) {
       for (const c of raw.comments) {
         if (c && typeof c === "object" && typeof (c as BrComment).text === "string") {
@@ -89,7 +92,7 @@ export function parseBrShowJson(json: string): BrShowIssue | null {
       }
     }
 
-    return { ...base, comments: comments.length ? comments : undefined };
+    return { ...base, description, comments: comments.length ? comments : undefined };
   } catch {
     return null;
   }
@@ -102,6 +105,30 @@ export function buildResumeContext(issue: BrShowIssue): string {
     line += `\nLast checkpoint: ${lastComment.text}`;
   }
   return line;
+}
+
+export function formatIssueCard(issue: BrShowIssue): string[] {
+  const priority = typeof issue.priority === "number" ? `P${issue.priority}` : "P?";
+  const status = issue.status ?? "unknown";
+  const type = issue.type ?? "issue";
+
+  const lines: string[] = [];
+  lines.push(`${issue.id} — ${issue.title}  [${priority} · ${status} · ${type}]`);
+
+  if (issue.description) {
+    const desc = issue.description.length > 120
+      ? issue.description.slice(0, 117) + "..."
+      : issue.description;
+    lines.push(desc);
+  }
+
+  if (issue.comments?.length) {
+    const last = issue.comments[issue.comments.length - 1]!;
+    const preview = last.text.length > 100 ? last.text.slice(0, 97) + "..." : last.text;
+    lines.push(`Last comment: ${preview}`);
+  }
+
+  return lines;
 }
 
 export function buildBeadsPrimeMessage(resumeContext?: string): string {
