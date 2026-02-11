@@ -4,6 +4,7 @@ import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 import {
   buildBeadsPrimeMessage,
+  buildResumeContext,
   detectTrackingMode,
   DIRTY_TREE_CLOSE_WARNING,
   formatBeadsModeStatus,
@@ -11,6 +12,7 @@ import {
   isBrCloseCommand,
   parseBrInfoJson,
   parseBrReadyJson,
+  parseBrShowJson,
   shouldShowContextReminder,
 } from "./lib.ts";
 
@@ -375,7 +377,28 @@ export default function beadsExtension(pi: ExtensionAPI) {
           if (!input.comment?.trim()) {
             return fail("beads comment requires comment text", { action: input.action, missing: "comment" });
           }
-          return runBrForTool(["comments", "add", input.id, input.comment]);
+          const commentArgs = ["comments", "add", input.id, input.comment];
+          const commentResult = await runBr(pi, commentArgs);
+          if (commentResult.code !== 0) {
+            return fail("beads comment failed", {
+              action: input.action,
+              command: `br ${commentArgs.join(" ")}`,
+              stdout: commentResult.stdout,
+              stderr: commentResult.stderr,
+              exitCode: commentResult.code,
+            });
+          }
+          return {
+            content: [{ type: "text" as const, text: commentResult.stdout || "OK" }],
+            details: {
+              action: input.action,
+              command: `br ${commentArgs.join(" ")}`,
+              stdout: commentResult.stdout,
+              stderr: commentResult.stderr,
+              exitCode: commentResult.code,
+              commentText: input.comment,
+            },
+          };
         }
 
         case "create": {
@@ -408,7 +431,13 @@ export default function beadsExtension(pi: ExtensionAPI) {
     renderCall(args, theme) {
       const action = typeof args.action === "string" ? args.action : "unknown";
       const id = typeof args.id === "string" ? ` ${args.id}` : "";
-      const text = theme.fg("toolTitle", theme.bold("beads ")) + theme.fg("muted", action) + theme.fg("accent", id);
+      let text = theme.fg("toolTitle", theme.bold("beads ")) + theme.fg("muted", action) + theme.fg("accent", id);
+
+      if (action === "comment" && typeof args.comment === "string" && args.comment.trim()) {
+        const preview = args.comment.length > 80 ? args.comment.slice(0, 77) + "..." : args.comment;
+        text += theme.fg("dim", ` — ${preview}`);
+      }
+
       return new Text(text, 0, 0);
     },
 
@@ -441,7 +470,12 @@ export default function beadsExtension(pi: ExtensionAPI) {
         return new Text(text, 0, 0);
       }
 
-      const details = (result.details ?? {}) as { action?: string; issueCount?: number; stdout?: string };
+      const details = (result.details ?? {}) as {
+        action?: string;
+        issueCount?: number;
+        stdout?: string;
+        commentText?: string;
+      };
       const action = details.action ?? "action";
       const stdout = details.stdout ?? "";
 
@@ -453,6 +487,12 @@ export default function beadsExtension(pi: ExtensionAPI) {
       }
 
       let text = theme.fg("success", "✓ ") + theme.fg("muted", summary);
+
+      if (action === "comment" && details.commentText) {
+        const lines = details.commentText.split("\n");
+        const preview = lines[0]!.length > 80 ? lines[0]!.slice(0, 77) + "..." : lines[0]!;
+        text += "\n" + theme.fg("dim", `  "${preview}"${lines.length > 1 ? ` (+${lines.length - 1} lines)` : ""}`);
+      }
 
       if (expanded) {
         const block = result.content.find((item) => item.type === "text");
@@ -735,10 +775,25 @@ export default function beadsExtension(pi: ExtensionAPI) {
 
     shouldPrime = false;
 
+    let resumeContext: string | undefined;
+    const inProgress = await runBr(pi, ["list", "--status", "in_progress", "--sort", "updated_at", "-r", "--json"]);
+    if (inProgress.code === 0) {
+      const issues = parseBrReadyJson(inProgress.stdout);
+      if (issues.length) {
+        const showResult = await runBr(pi, ["show", issues[0]!.id, "--json"]);
+        if (showResult.code === 0) {
+          const detail = parseBrShowJson(showResult.stdout);
+          if (detail) {
+            resumeContext = buildResumeContext(detail);
+          }
+        }
+      }
+    }
+
     return {
       message: {
         customType: "beads-prime",
-        content: buildBeadsPrimeMessage(),
+        content: buildBeadsPrimeMessage(resumeContext),
         display: false,
       },
     };
