@@ -58,8 +58,54 @@ export function shouldShowContextReminder(args: {
   return args.tokens > threshold;
 }
 
-export function buildBeadsPrimeMessage(): string {
-  return [
+export type BrComment = {
+  id: number;
+  issue_id: string;
+  author: string;
+  text: string;
+  created_at: string;
+};
+
+export type BrShowIssue = BrIssueSummary & {
+  comments?: BrComment[];
+};
+
+export function parseBrShowJson(json: string): BrShowIssue | null {
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    const arr = Array.isArray(parsed) ? parsed : [parsed];
+    if (!arr.length) return null;
+    const row = arr[0];
+    const base = normalizeIssueRow(row);
+    if (!base) return null;
+
+    const comments: BrComment[] = [];
+    const raw = row as { comments?: unknown };
+    if (Array.isArray(raw.comments)) {
+      for (const c of raw.comments) {
+        if (c && typeof c === "object" && typeof (c as BrComment).text === "string") {
+          comments.push(c as BrComment);
+        }
+      }
+    }
+
+    return { ...base, comments: comments.length ? comments : undefined };
+  } catch {
+    return null;
+  }
+}
+
+export function buildResumeContext(issue: BrShowIssue): string {
+  const lastComment = issue.comments?.length ? issue.comments[issue.comments.length - 1]! : null;
+  let line = `## Resuming: ${issue.id} — ${issue.title}`;
+  if (lastComment) {
+    line += `\nLast checkpoint: ${lastComment.text}`;
+  }
+  return line;
+}
+
+export function buildBeadsPrimeMessage(resumeContext?: string): string {
+  const lines = [
     "# Beads Workflow Context",
     "",
     "## Core Rules",
@@ -73,7 +119,13 @@ export function buildBeadsPrimeMessage(): string {
     "- br list --status in_progress",
     "- br show <id>",
     '- br close <id> --reason "Verified: ..."',
-  ].join("\n");
+  ];
+
+  if (resumeContext) {
+    lines.push("", resumeContext);
+  }
+
+  return lines.join("\n");
 }
 
 export function formatIssueLabel(issue: BrIssueSummary): string {
