@@ -9,6 +9,7 @@ import {
   shouldShowContextReminder,
   buildBeadsPrimeMessage,
   buildResumeContext,
+  formatIssueCard,
   formatIssueLabel,
   summarizeInProgressIssue,
   formatBeadsModeStatus,
@@ -116,6 +117,19 @@ test("parseBrShowJson extracts issue with comments", () => {
   assert.equal(issue?.comments?.[1]?.text, "Tests passing");
 });
 
+test("parseBrShowJson captures description", () => {
+  const json = JSON.stringify([{
+    id: "bd-1",
+    title: "Do thing",
+    description: "Detailed explanation here",
+    status: "open",
+    issue_type: "task",
+    priority: 2,
+  }]);
+  const issue = parseBrShowJson(json);
+  assert.equal(issue?.description, "Detailed explanation here");
+});
+
 test("parseBrShowJson handles issue with no comments", () => {
   const json = JSON.stringify([{ id: "bd-2", title: "No comments" }]);
   const issue = parseBrShowJson(json);
@@ -148,6 +162,49 @@ test("buildResumeContext works without comments", () => {
   assert.match(ctx, /bd-2/);
   assert.match(ctx, /No comments/);
   assert.ok(!ctx.includes("checkpoint"));
+});
+
+test("formatIssueCard renders full card with description and last comment", () => {
+  const lines = formatIssueCard({
+    id: "bd-1",
+    title: "Fix parser",
+    type: "task",
+    priority: 2,
+    status: "in_progress",
+    description: "Handle unicode filenames",
+    comments: [
+      { id: 1, issue_id: "bd-1", author: "a", text: "Started", created_at: "2026-01-01T00:00:00Z" },
+      { id: 2, issue_id: "bd-1", author: "a", text: "Tests green", created_at: "2026-01-01T01:00:00Z" },
+    ],
+  });
+  assert.equal(lines.length, 3);
+  assert.match(lines[0], /bd-1 — Fix parser.*P2.*in_progress.*task/);
+  assert.match(lines[1], /Handle unicode filenames/);
+  assert.match(lines[2], /Tests green/);
+});
+
+test("formatIssueCard renders minimal card without description or comments", () => {
+  const lines = formatIssueCard({
+    id: "bd-2",
+    title: "Quick fix",
+    type: "bug",
+    priority: 1,
+    status: "open",
+  });
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /bd-2 — Quick fix.*P1.*open.*bug/);
+});
+
+test("formatIssueCard truncates long description", () => {
+  const longDesc = "x".repeat(200);
+  const lines = formatIssueCard({
+    id: "bd-3",
+    title: "Long",
+    description: longDesc,
+  });
+  assert.equal(lines.length, 2);
+  assert.ok(lines[1].length <= 120);
+  assert.ok(lines[1].endsWith("..."));
 });
 
 test("buildBeadsPrimeMessage appends resume context when provided", () => {

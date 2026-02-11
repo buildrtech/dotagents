@@ -8,6 +8,7 @@ import {
   detectTrackingMode,
   DIRTY_TREE_CLOSE_WARNING,
   formatBeadsModeStatus,
+  formatIssueCard,
   formatIssueLabel,
   isBrCloseCommand,
   parseBrInfoJson,
@@ -15,6 +16,7 @@ import {
   parseBrShowJson,
   shouldShowContextReminder,
 } from "./lib.ts";
+import type { BrShowIssue } from "./lib.ts";
 
 type BeadsAction = "ready" | "show" | "claim" | "close" | "comment" | "create" | "status";
 
@@ -352,7 +354,29 @@ export default function beadsExtension(pi: ExtensionAPI) {
           if (!input.id) {
             return fail("beads show requires id", { action: input.action, missing: "id" });
           }
-          return runBrForTool(["show", input.id, "--json"]);
+          const showArgs = ["show", input.id, "--json"];
+          const showResult = await runBr(pi, showArgs);
+          if (showResult.code !== 0) {
+            return fail("beads show failed", {
+              action: input.action,
+              command: `br ${showArgs.join(" ")}`,
+              stdout: showResult.stdout,
+              stderr: showResult.stderr,
+              exitCode: showResult.code,
+            });
+          }
+          const showIssue = parseBrShowJson(showResult.stdout);
+          return {
+            content: [{ type: "text" as const, text: showResult.stdout || "OK" }],
+            details: {
+              action: input.action,
+              command: `br ${showArgs.join(" ")}`,
+              stdout: showResult.stdout,
+              stderr: showResult.stderr,
+              exitCode: showResult.code,
+              issueCard: showIssue,
+            },
+          };
         }
 
         case "claim": {
@@ -406,7 +430,7 @@ export default function beadsExtension(pi: ExtensionAPI) {
             return fail("beads create requires title", { action: input.action, missing: "title" });
           }
 
-          const args = [
+          const createArgs = [
             "create",
             input.title,
             "--type",
@@ -416,10 +440,42 @@ export default function beadsExtension(pi: ExtensionAPI) {
           ];
 
           if (input.description?.trim()) {
-            args.push("--description", input.description);
+            createArgs.push("--description", input.description);
           }
 
-          return runBrForTool(args);
+          const createResult = await runBr(pi, createArgs);
+          if (createResult.code !== 0) {
+            return fail("beads create failed", {
+              action: input.action,
+              command: `br ${createArgs.join(" ")}`,
+              stdout: createResult.stdout,
+              stderr: createResult.stderr,
+              exitCode: createResult.code,
+            });
+          }
+
+          refreshBeadsStatus(ctx).catch(() => {});
+
+          const createdCard: BrShowIssue = {
+            id: createResult.stdout.match(/Created\s+(\S+)/)?.[1] ?? "???",
+            title: input.title,
+            type: input.type?.trim() || "task",
+            priority: typeof input.priority === "number" ? input.priority : 2,
+            status: "open",
+            description: input.description?.trim() || undefined,
+          };
+
+          return {
+            content: [{ type: "text" as const, text: createResult.stdout || "OK" }],
+            details: {
+              action: input.action,
+              command: `br ${createArgs.join(" ")}`,
+              stdout: createResult.stdout,
+              stderr: createResult.stderr,
+              exitCode: createResult.code,
+              issueCard: createdCard,
+            },
+          };
         }
 
         case "status": {
@@ -475,9 +531,27 @@ export default function beadsExtension(pi: ExtensionAPI) {
         issueCount?: number;
         stdout?: string;
         commentText?: string;
+        issueCard?: BrShowIssue;
       };
       const action = details.action ?? "action";
       const stdout = details.stdout ?? "";
+
+      // Mini card for show/create
+      if ((action === "show" || action === "create") && details.issueCard) {
+        const prefix = action === "create" ? "Created " : "";
+        const cardLines = formatIssueCard(details.issueCard);
+        let text = theme.fg("success", "✓ ") + theme.fg("muted", `${prefix}${cardLines[0]}`);
+        for (let i = 1; i < cardLines.length; i++) {
+          text += "\n" + theme.fg("dim", `  ${cardLines[i]}`);
+        }
+        if (expanded) {
+          const block = result.content.find((item) => item.type === "text");
+          if (block && block.type === "text" && block.text.trim()) {
+            text += `\n${theme.fg("dim", block.text)}`;
+          }
+        }
+        return new Text(text, 0, 0);
+      }
 
       let summary: string;
       if (action === "ready" && typeof details.issueCount === "number") {
