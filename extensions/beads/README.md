@@ -43,7 +43,7 @@ In short: extension executes; skills reason.
 
 Auto-load location:
 
-- `~/.pi/agent/extensions/beads -> /Users/brian/.agents/extensions/beads`
+- `~/.pi/agent/extensions/beads -> /Users/brian/code/buildrtech/dotagents/extensions/beads`
 
 After edits in a running Pi session, run:
 
