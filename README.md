@@ -56,6 +56,13 @@ make install
 | `issue-writing` | Universal user-story and acceptance-criteria issue design |
 | `beads-create` | beads CLI workflow (`br create`, `br update`, `br dep add`) |
 
+## Beads Extension (runtime)
+
+- Runtime entry: `extensions/beads/index.ts`
+- Provides deterministic beads tool execution plus interactive `/beads` command wrappers
+- Includes hook behavior for mode status, priming, dirty-close guard, and context reminders
+- Extension-vs-skill split: runtime mechanics live in extension, reasoning remains in `@issue-writing` and `@beads-create`
+
 ## Commands
 
 | Command | Description |
