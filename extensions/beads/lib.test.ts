@@ -74,16 +74,16 @@ test("formatIssueLabel includes id, priority, and title", () => {
   assert.match(label, /Do thing/);
 });
 
-test("summarizeInProgressIssue reports first id and overflow count", () => {
+test("summarizeInProgressIssue reports first id with title and overflow count", () => {
   assert.equal(summarizeInProgressIssue([]), "none");
-  assert.equal(summarizeInProgressIssue([{ id: "bd-1", title: "One" }]), "bd-1");
+  assert.equal(summarizeInProgressIssue([{ id: "bd-1", title: "One" }]), "bd-1 — One");
   assert.equal(
     summarizeInProgressIssue([
       { id: "bd-1", title: "One" },
       { id: "bd-2", title: "Two" },
       { id: "bd-3", title: "Three" },
     ]),
-    "bd-1 +2",
+    "bd-1 — One +2",
   );
 });
 
@@ -93,7 +93,7 @@ test("formatBeadsModeStatus includes in-progress summary", () => {
     issueCount: 12,
     inProgressIssues: [{ id: "bd-1", title: "One" }],
   });
-  assert.equal(status, "beads: stealth (sqlite) · 12 issue(s) · in-progress: bd-1");
+  assert.equal(status, "beads: stealth (sqlite) · 12 issue(s) · in-progress: bd-1 — One");
 });
 
 test("dirty tree close warning text includes semantic-commit guidance", () => {

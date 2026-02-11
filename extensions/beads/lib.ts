@@ -84,8 +84,8 @@ export function formatIssueLabel(issue: BrIssueSummary): string {
 
 export function summarizeInProgressIssue(issues: BrIssueSummary[]): string {
   if (!issues.length) return "none";
-  if (issues.length === 1) return issues[0]!.id;
-  return `${issues[0]!.id} +${issues.length - 1}`;
+  if (issues.length === 1) return `${issues[0]!.id} — ${issues[0]!.title}`;
+  return `${issues[0]!.id} — ${issues[0]!.title} +${issues.length - 1}`;
 }
 
 export function formatBeadsModeStatus(args: {
