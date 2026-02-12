@@ -9,6 +9,7 @@ import {
   isBrCloseCommand,
   shouldShowContextReminder,
   buildBeadsPrimeMessage,
+  getBeadsModeOffMessage,
   buildResumeContext,
   formatIssueCard,
   formatIssueLabel,
@@ -79,10 +80,31 @@ test("shouldShowContextReminder enforces one-time percentage threshold", () => {
   );
 });
 
+test("shouldShowContextReminder suppresses reminders when beads mode is disabled", () => {
+  assert.equal(
+    shouldShowContextReminder({
+      usagePercent: 99,
+      thresholdPercent: 85,
+      alreadyShown: false,
+      beadsEnabled: false,
+    }),
+    false,
+  );
+});
+
 test("buildBeadsPrimeMessage contains anti-TodoWrite guardrail", () => {
   const text = buildBeadsPrimeMessage();
   assert.match(text, /Use beads for ALL task tracking/);
   assert.match(text, /Do NOT use TodoWrite/);
+});
+
+test("buildBeadsPrimeMessage returns empty text when beads mode is disabled", () => {
+  const text = buildBeadsPrimeMessage({ beadsEnabled: false });
+  assert.equal(text, "");
+});
+
+test("getBeadsModeOffMessage includes toggle guidance", () => {
+  assert.equal(getBeadsModeOffMessage(), "Beads mode is off. Press Ctrl+B to enable.");
 });
 
 test("formatIssueLabel includes id, priority, and title", () => {
