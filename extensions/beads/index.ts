@@ -905,16 +905,15 @@ export default function beadsExtension(pi: ExtensionAPI) {
 
     if (
       shouldShowContextReminder({
-        tokens: usage.tokens,
-        contextLimit: 200_000,
-        thresholdPct: 0.7,
+        usagePercent: usage.percent,
+        thresholdPercent: 85,
         alreadyShown: contextReminderShown,
       })
     ) {
       contextReminderShown = true;
 
       const reminderText =
-        "Context is above 70%. Checkpoint your current progress to the beads issue now, then run /compact.";
+        `Context is at ${Math.round(usage.percent)}%. Checkpoint your current progress to the beads issue now, then run /compact.`;
 
       // Human sees it immediately
       ctx.ui.notify(reminderText, "warning");

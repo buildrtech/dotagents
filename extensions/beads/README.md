@@ -26,7 +26,7 @@ Provide extension-level execution UX for beads while keeping planning/reasoning 
 - `session_before_compact`: re-arm one-time beads priming
 - `before_agent_start`: inject hidden `beads-prime` message with beads guardrails
 - `tool_call`: block `br close` if git working tree is dirty
-- `turn_end`: show one-time high-context reminder over 70%
+- `turn_end`: show one-time high-context reminder at 85%+
 
 ## Extension-vs-skill boundary
 
