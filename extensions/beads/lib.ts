@@ -11,6 +11,10 @@ export type BrIssueSummary = {
 export const DIRTY_TREE_CLOSE_WARNING =
   "Warning: Issue closed. You still have uncommitted changes — run @semantic-commit before continuing.";
 
+const BEADS_MODE_OFF_MESSAGE = "Beads mode is off. Press Ctrl+B to enable.";
+const BEADS_STATUS_OFF = "beads: off";
+const BEADS_STATUS_ON_NO_PROJECT = "beads: on (no project)";
+
 export function parseBrInfoJson(json: string): { mode: string; issueCount: number } | null {
   try {
     const parsed = JSON.parse(json) as { mode?: unknown; issue_count?: unknown };
@@ -143,12 +147,17 @@ export function formatIssueCard(issue: BrShowIssue): string[] {
 }
 
 export function getBeadsModeOffMessage(): string {
-  return "Beads mode is off. Press Ctrl+B to enable.";
+  return BEADS_MODE_OFF_MESSAGE;
 }
 
-export function buildBeadsPrimeMessage(
-  args?: string | { beadsEnabled?: boolean; resumeContext?: string },
-): string {
+type BeadsPrimeMessageArgs = {
+  beadsEnabled?: boolean;
+  resumeContext?: string;
+};
+
+export function buildBeadsPrimeMessage(resumeContext?: string): string;
+export function buildBeadsPrimeMessage(args?: BeadsPrimeMessageArgs): string;
+export function buildBeadsPrimeMessage(args?: string | BeadsPrimeMessageArgs): string {
   const beadsEnabled = typeof args === "object" && args !== null ? args.beadsEnabled ?? true : true;
   const resumeContext = typeof args === "string" ? args : args?.resumeContext;
 
@@ -199,11 +208,11 @@ export function formatBeadsModeStatus(args: {
   inProgressIssues: BrIssueSummary[];
 }): string {
   if (args.beadsEnabled === false) {
-    return "beads: off";
+    return BEADS_STATUS_OFF;
   }
 
   if (args.isBeadsProject === false) {
-    return "beads: on (no project)";
+    return BEADS_STATUS_ON_NO_PROJECT;
   }
 
   return `beads: ${args.modeText} · ${args.issueCount} issue(s) · in-progress: ${summarizeInProgressIssue(args.inProgressIssues)}`;

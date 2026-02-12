@@ -869,7 +869,12 @@ export default function beadsExtension(pi: ExtensionAPI) {
       }
 
       await refreshBeadsStatus(ctx);
-      ctx.ui.notify(`Beads mode ${beadsEnabled ? "enabled" : "disabled"}.`, "info");
+
+      const toggleMessage = beadsEnabled
+        ? isBeadsProject ? "Beads mode enabled." : "Beads mode enabled (no project detected)."
+        : "Beads mode disabled.";
+
+      ctx.ui.notify(toggleMessage, "info");
     },
   });
 
@@ -921,7 +926,7 @@ export default function beadsExtension(pi: ExtensionAPI) {
     return {
       message: {
         customType: "beads-prime",
-        content: buildBeadsPrimeMessage(resumeContext),
+        content: buildBeadsPrimeMessage({ beadsEnabled, resumeContext }),
         display: false,
       },
     };
@@ -970,6 +975,7 @@ export default function beadsExtension(pi: ExtensionAPI) {
         usagePercent: usage.percent,
         thresholdPercent: 85,
         alreadyShown: contextReminderShown,
+        beadsEnabled,
       })
     ) {
       contextReminderShown = true;
