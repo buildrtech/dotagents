@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   parseBrInfoJson,
+  parseBeadsSessionMode,
   parseBrReadyJson,
   parseBrShowJson,
   detectTrackingMode,
@@ -23,6 +24,20 @@ test("parseBrInfoJson parses mode and issue_count", () => {
 
 test("parseBrInfoJson returns null on invalid json", () => {
   assert.equal(parseBrInfoJson("not-json"), null);
+});
+
+test("parseBeadsSessionMode enables beads for initialized projects", () => {
+  assert.deepEqual(parseBeadsSessionMode({ brInfoExitCode: 0 }), {
+    isBeadsProject: true,
+    beadsEnabled: true,
+  });
+});
+
+test("parseBeadsSessionMode disables beads when project is not initialized", () => {
+  assert.deepEqual(parseBeadsSessionMode({ brInfoExitCode: 2 }), {
+    isBeadsProject: false,
+    beadsEnabled: false,
+  });
 });
 
 test("parseBrReadyJson handles br list payload", () => {
