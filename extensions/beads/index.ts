@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { StringEnum } from "@mariozechner/pi-ai";
 import { Text } from "@mariozechner/pi-tui";
-import { Type } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
 import {
   buildBeadsPrimeMessage,
   buildResumeContext,
@@ -17,21 +17,81 @@ import {
   parseBrReadyJson,
   parseBrShowJson,
   shouldShowContextReminder,
+  summarizeBeadsActionResult,
 } from "./lib.ts";
-import type { BrShowIssue } from "./lib.ts";
+import type { BeadsAction, BrIssueSummary, BrShowIssue } from "./lib.ts";
 
-type BeadsAction = "ready" | "show" | "claim" | "close" | "comment" | "create" | "status";
+const beadsToolSchema = Type.Object({
+  action: StringEnum(["ready", "show", "claim", "close", "comment", "create", "status"] as const),
+  id: Type.Optional(Type.String({ description: "Issue id (e.g. br-abc)" })),
+  title: Type.Optional(Type.String({ description: "Issue title for create" })),
+  description: Type.Optional(Type.String({ description: "Issue description for create" })),
+  type: Type.Optional(Type.String({ description: "Issue type for create (task/feature/bug/epic)" })),
+  priority: Type.Optional(Type.Number({ description: "Issue priority for create (0-4)" })),
+  comment: Type.Optional(Type.String({ description: "Comment text for comment action" })),
+  reason: Type.Optional(Type.String({ description: "Close reason for close action" })),
+});
 
-type BeadsToolInput = {
+type BeadsToolInput = Static<typeof beadsToolSchema>;
+
+type DisabledToolDetails = {
   action: BeadsAction;
-  id?: string;
-  title?: string;
-  description?: string;
-  type?: string;
-  priority?: number;
-  comment?: string;
-  reason?: string;
+  beadsEnabled: false;
 };
+
+type RunToolDetails = {
+  action: "claim" | "close" | "status";
+  command: string;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  closeWarning?: string | null;
+};
+
+type ReadyToolDetails = {
+  action: "ready";
+  command: string;
+  issues: BrIssueSummary[];
+  issueCount: number;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+};
+
+type ShowToolDetails = {
+  action: "show";
+  command: string;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  issueCard: BrShowIssue | null;
+};
+
+type CommentToolDetails = {
+  action: "comment";
+  command: string;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  commentText: string;
+};
+
+type CreateToolDetails = {
+  action: "create";
+  command: string;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  issueCard: BrShowIssue;
+};
+
+type BeadsToolDetails =
+  | DisabledToolDetails
+  | RunToolDetails
+  | ReadyToolDetails
+  | ShowToolDetails
+  | CommentToolDetails
+  | CreateToolDetails;
 
 type ExecResult = {
   stdout: string;
@@ -84,73 +144,127 @@ function summarizeExecFailure(result: ExecResult): string {
   );
 }
 
-function summarizeActionResult(action: string, stdout: string): string {
-  const firstLine = stdout.split("\n").find((line) => line.trim().length > 0)?.trim() ?? "";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
-  switch (action) {
-    case "create": {
-      // "✓ Created bd-oe1: test rendering"
-      const match = firstLine.match(/Created\s+(\S+):\s+(.+)/);
-      if (match) return `Created ${match[1]} — ${match[2]}`;
-      return firstLine || "created";
-    }
-
-    case "claim": {
-      // "Updated bd-oe1: test rendering\n  status: open → in_progress"
-      const idMatch = firstLine.match(/Updated\s+(\S+):\s+(.+)/);
-      if (idMatch) return `Claimed ${idMatch[1]} — ${idMatch[2]}`;
-      return firstLine || "claimed";
-    }
-
-    case "close": {
-      // "Closed bd-oe1: test rendering"
-      const match = firstLine.match(/Closed\s+(\S+):\s+(.+)/);
-      if (match) return `Closed ${match[1]} — ${match[2]}`;
-      return firstLine || "closed";
-    }
-
-    case "comment": {
-      // "Comment added to bd-oe1"
-      const match = firstLine.match(/Comment added to\s+(\S+)/);
-      if (match) return `Comment added to ${match[1]}`;
-      return firstLine || "comment added";
-    }
-
-    case "ready": {
-      const lines = stdout
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean);
-      if (!lines.length || /no\s+(open|ready)/i.test(firstLine)) return "No ready issues";
-      return `${lines.length} ready issue(s)`;
-    }
-
-    case "show": {
-      // "○ bd-oe1 · test rendering   [● P3 · OPEN]"
-      const match = firstLine.match(/[○●✓✗]\s+(\S+)\s+·\s+(.+?)\s+\[/);
-      if (match) return `${match[1]} — ${match[2].trim()}`;
-      return firstLine || "shown";
-    }
-
-    case "status": {
-      // Extract key counts from br stats output
-      const total = stdout.match(/Total Issues:\s+(\d+)/);
-      const open = stdout.match(/Open:\s+(\d+)/);
-      const inProgress = stdout.match(/In Progress:\s+(\d+)/);
-      const closed = stdout.match(/Closed:\s+(\d+)/);
-      if (total) {
-        const parts = [`${total[1]} total`];
-        if (open && open[1] !== "0") parts.push(`${open[1]} open`);
-        if (inProgress && inProgress[1] !== "0") parts.push(`${inProgress[1]} in-progress`);
-        if (closed && closed[1] !== "0") parts.push(`${closed[1]} closed`);
-        return parts.join(", ");
-      }
-      return firstLine || "status";
-    }
-
-    default:
-      return firstLine || `${action} complete`;
+function parseBeadsToolDetails(details: unknown): BeadsToolDetails | null {
+  if (!isRecord(details) || typeof details.action !== "string") {
+    return null;
   }
+
+  if (details.beadsEnabled === false) {
+    return {
+      action: details.action as BeadsAction,
+      beadsEnabled: false,
+    };
+  }
+
+  const action = details.action;
+
+  if (action === "ready") {
+    if (
+      typeof details.command === "string" &&
+      Array.isArray(details.issues) &&
+      typeof details.issueCount === "number" &&
+      typeof details.stdout === "string" &&
+      typeof details.stderr === "string" &&
+      typeof details.exitCode === "number"
+    ) {
+      return {
+        action,
+        command: details.command,
+        issues: details.issues as BrIssueSummary[],
+        issueCount: details.issueCount,
+        stdout: details.stdout,
+        stderr: details.stderr,
+        exitCode: details.exitCode,
+      };
+    }
+    return null;
+  }
+
+  if (action === "show") {
+    if (
+      typeof details.command === "string" &&
+      typeof details.stdout === "string" &&
+      typeof details.stderr === "string" &&
+      typeof details.exitCode === "number"
+    ) {
+      return {
+        action,
+        command: details.command,
+        stdout: details.stdout,
+        stderr: details.stderr,
+        exitCode: details.exitCode,
+        issueCard: isRecord(details.issueCard) ? (details.issueCard as BrShowIssue) : null,
+      };
+    }
+    return null;
+  }
+
+  if (action === "comment") {
+    if (
+      typeof details.command === "string" &&
+      typeof details.stdout === "string" &&
+      typeof details.stderr === "string" &&
+      typeof details.exitCode === "number" &&
+      typeof details.commentText === "string"
+    ) {
+      return {
+        action,
+        command: details.command,
+        stdout: details.stdout,
+        stderr: details.stderr,
+        exitCode: details.exitCode,
+        commentText: details.commentText,
+      };
+    }
+    return null;
+  }
+
+  if (action === "create") {
+    if (
+      typeof details.command === "string" &&
+      typeof details.stdout === "string" &&
+      typeof details.stderr === "string" &&
+      typeof details.exitCode === "number" &&
+      isRecord(details.issueCard)
+    ) {
+      return {
+        action,
+        command: details.command,
+        stdout: details.stdout,
+        stderr: details.stderr,
+        exitCode: details.exitCode,
+        issueCard: details.issueCard as BrShowIssue,
+      };
+    }
+    return null;
+  }
+
+  if (action === "claim" || action === "close" || action === "status") {
+    if (
+      typeof details.command === "string" &&
+      typeof details.stdout === "string" &&
+      typeof details.stderr === "string" &&
+      typeof details.exitCode === "number"
+    ) {
+      return {
+        action,
+        command: details.command,
+        stdout: details.stdout,
+        stderr: details.stderr,
+        exitCode: details.exitCode,
+        closeWarning: typeof details.closeWarning === "string" || details.closeWarning === null
+          ? details.closeWarning
+          : undefined,
+      };
+    }
+    return null;
+  }
+
+  return null;
 }
 
 async function runBr(pi: ExtensionAPI, args: string[], timeout = 15000): Promise<ExecResult> {
@@ -279,16 +393,7 @@ export default function beadsExtension(pi: ExtensionAPI) {
     label: "Beads",
     description:
       "Run deterministic beads operations (ready, show, claim, close, comment, create, status) through br CLI.",
-    parameters: Type.Object({
-      action: StringEnum(["ready", "show", "claim", "close", "comment", "create", "status"] as const),
-      id: Type.Optional(Type.String({ description: "Issue id (e.g. br-abc)" })),
-      title: Type.Optional(Type.String({ description: "Issue title for create" })),
-      description: Type.Optional(Type.String({ description: "Issue description for create" })),
-      type: Type.Optional(Type.String({ description: "Issue type for create (task/feature/bug/epic)" })),
-      priority: Type.Optional(Type.Number({ description: "Issue priority for create (0-4)" })),
-      comment: Type.Optional(Type.String({ description: "Comment text for comment action" })),
-      reason: Type.Optional(Type.String({ description: "Close reason for close action" })),
-    }),
+    parameters: beadsToolSchema,
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const input = params as BeadsToolInput;
 
@@ -313,7 +418,7 @@ export default function beadsExtension(pi: ExtensionAPI) {
         };
       };
 
-      const mutatingActions = new Set(["create", "claim", "close"]);
+      const mutatingActions = new Set<BeadsAction>(["create", "claim", "close"]);
 
       const runBrForTool = async (args: string[]) => {
         const result = await runBr(pi, args);
@@ -540,8 +645,12 @@ export default function beadsExtension(pi: ExtensionAPI) {
       }
 
       if (result.isError) {
-        const details = (result.details ?? {}) as { stderr?: string; stdout?: string; command?: string };
-        const summary = extractErrorSummary(details.stderr) ?? extractErrorSummary(details.stdout);
+        const details = isRecord(result.details) ? result.details : undefined;
+        const stderr = typeof details?.stderr === "string" ? details.stderr : undefined;
+        const stdout = typeof details?.stdout === "string" ? details.stdout : undefined;
+        const command = typeof details?.command === "string" ? details.command : undefined;
+
+        const summary = extractErrorSummary(stderr) ?? extractErrorSummary(stdout);
 
         let text = theme.fg("error", "✖ beads action failed");
         if (summary) {
@@ -549,32 +658,26 @@ export default function beadsExtension(pi: ExtensionAPI) {
         }
 
         if (expanded) {
-          if (details.command) {
-            text += `\n${theme.fg("dim", details.command)}`;
+          if (command) {
+            text += `\n${theme.fg("dim", command)}`;
           }
-          if (details.stderr?.trim()) {
-            text += `\n${theme.fg("dim", details.stderr)}`;
+          if (stderr?.trim()) {
+            text += `\n${theme.fg("dim", stderr)}`;
           }
-          if (details.stdout?.trim()) {
-            text += `\n${theme.fg("dim", details.stdout)}`;
+          if (stdout?.trim()) {
+            text += `\n${theme.fg("dim", stdout)}`;
           }
         }
 
         return new Text(text, 0, 0);
       }
 
-      const details = (result.details ?? {}) as {
-        action?: string;
-        issueCount?: number;
-        stdout?: string;
-        commentText?: string;
-        issueCard?: BrShowIssue;
-      };
-      const action = details.action ?? "action";
-      const stdout = details.stdout ?? "";
+      const details = parseBeadsToolDetails(result.details);
+      const action: BeadsAction = details?.action ?? "status";
+      const stdout = details && "stdout" in details ? details.stdout : "";
 
       // Mini card for show/create
-      if ((action === "show" || action === "create") && details.issueCard) {
+      if ((action === "show" || action === "create") && details && "issueCard" in details && details.issueCard) {
         const prefix = action === "create" ? "Created " : "";
         const cardLines = formatIssueCard(details.issueCard);
         let text = theme.fg("success", "✓ ") + theme.fg("muted", `${prefix}${cardLines[0]}`);
@@ -591,15 +694,15 @@ export default function beadsExtension(pi: ExtensionAPI) {
       }
 
       let summary: string;
-      if (action === "ready" && typeof details.issueCount === "number") {
+      if (action === "ready" && details && details.action === "ready") {
         summary = details.issueCount === 0 ? "No ready issues" : `${details.issueCount} ready issue(s)`;
       } else {
-        summary = summarizeActionResult(action, stdout);
+        summary = summarizeBeadsActionResult(action, stdout);
       }
 
       let text = theme.fg("success", "✓ ") + theme.fg("muted", summary);
 
-      if (action === "comment" && details.commentText) {
+      if (action === "comment" && details && details.action === "comment") {
         const lines = details.commentText.split("\n");
         const preview = lines[0]!.length > 80 ? lines[0]!.slice(0, 77) + "..." : lines[0]!;
         text += "\n" + theme.fg("dim", `  "${preview}"${lines.length > 1 ? ` (+${lines.length - 1} lines)` : ""}`);
