@@ -49,17 +49,17 @@ test("isBrCloseCommand only matches literal br close invocation", () => {
   assert.equal(isBrCloseCommand("bash -lc 'br close abc'"), false);
 });
 
-test("shouldShowContextReminder enforces one-time threshold", () => {
+test("shouldShowContextReminder enforces one-time percentage threshold", () => {
   assert.equal(
-    shouldShowContextReminder({ tokens: 150000, contextLimit: 200000, thresholdPct: 0.7, alreadyShown: false }),
+    shouldShowContextReminder({ usagePercent: 85, thresholdPercent: 85, alreadyShown: false }),
     true,
   );
   assert.equal(
-    shouldShowContextReminder({ tokens: 120000, contextLimit: 200000, thresholdPct: 0.7, alreadyShown: false }),
+    shouldShowContextReminder({ usagePercent: 84.9, thresholdPercent: 85, alreadyShown: false }),
     false,
   );
   assert.equal(
-    shouldShowContextReminder({ tokens: 150000, contextLimit: 200000, thresholdPct: 0.7, alreadyShown: true }),
+    shouldShowContextReminder({ usagePercent: 92, thresholdPercent: 85, alreadyShown: true }),
     false,
   );
 });

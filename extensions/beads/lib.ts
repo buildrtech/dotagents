@@ -48,14 +48,12 @@ export function isBrCloseCommand(command: string): boolean {
 }
 
 export function shouldShowContextReminder(args: {
-  tokens: number;
-  contextLimit: number;
-  thresholdPct: number;
+  usagePercent: number;
+  thresholdPercent: number;
   alreadyShown: boolean;
 }): boolean {
   if (args.alreadyShown) return false;
-  const threshold = Math.floor(args.contextLimit * args.thresholdPct);
-  return args.tokens > threshold;
+  return args.usagePercent >= args.thresholdPercent;
 }
 
 export type BrComment = {
