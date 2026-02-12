@@ -15,6 +15,7 @@ import {
   formatIssueLabel,
   summarizeInProgressIssue,
   formatBeadsModeStatus,
+  summarizeBeadsActionResult,
   DIRTY_TREE_CLOSE_WARNING,
 } from "./lib.ts";
 
@@ -155,6 +156,32 @@ test("formatBeadsModeStatus shows on-without-project label", () => {
     inProgressIssues: [{ id: "bd-1", title: "One" }],
   });
   assert.equal(status, "beads: on (no project)");
+});
+
+test("summarizeBeadsActionResult handles create output", () => {
+  const summary = summarizeBeadsActionResult(
+    "create",
+    "✓ Created bd-42x: tighten action details typing\n",
+  );
+  assert.equal(summary, "Created bd-42x — tighten action details typing");
+});
+
+test("summarizeBeadsActionResult handles empty ready output", () => {
+  const summary = summarizeBeadsActionResult("ready", "");
+  assert.equal(summary, "No ready issues");
+});
+
+test("summarizeBeadsActionResult handles status stats output", () => {
+  const summary = summarizeBeadsActionResult(
+    "status",
+    [
+      "Total Issues: 13",
+      "Open: 5",
+      "In Progress: 2",
+      "Closed: 6",
+    ].join("\n"),
+  );
+  assert.equal(summary, "13 total, 5 open, 2 in-progress, 6 closed");
 });
 
 test("parseBrShowJson extracts issue with comments", () => {
