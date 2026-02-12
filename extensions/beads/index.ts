@@ -186,7 +186,25 @@ export default function beadsExtension(pi: ExtensionAPI) {
     ctx.ui.setStatus("beads-mode", undefined);
   };
 
+  const setBeadsModeUiStatus = (ctx: UiContext) => {
+    ctx.ui.setStatus(
+      "beads-mode",
+      formatBeadsModeStatus({
+        beadsEnabled,
+        isBeadsProject,
+        modeText: cachedModeText,
+        issueCount: 0,
+        inProgressIssues: [],
+      }),
+    );
+  };
+
   const refreshBeadsStatus = async (ctx: UiContext) => {
+    if (!beadsEnabled || !isBeadsProject) {
+      setBeadsModeUiStatus(ctx);
+      return;
+    }
+
     const [info, listResult, inProgressResult] = await Promise.all([
       runBr(pi, ["info", "--json"]),
       runBr(pi, ["list", "--json"]),
@@ -215,7 +233,13 @@ export default function beadsExtension(pi: ExtensionAPI) {
 
     ctx.ui.setStatus(
       "beads-mode",
-      formatBeadsModeStatus({ modeText: cachedModeText, issueCount, inProgressIssues }),
+      formatBeadsModeStatus({
+        beadsEnabled,
+        isBeadsProject,
+        modeText: cachedModeText,
+        issueCount,
+        inProgressIssues,
+      }),
     );
   };
 
@@ -833,6 +857,22 @@ export default function beadsExtension(pi: ExtensionAPI) {
     },
   });
 
+  pi.registerShortcut("ctrl+b", {
+    description: "Toggle beads mode on/off",
+    handler: async (ctx) => {
+      beadsEnabled = !beadsEnabled;
+      shouldPrime = beadsEnabled;
+      contextReminderShown = false;
+
+      if (beadsEnabled && isBeadsProject) {
+        cachedModeText = "";
+      }
+
+      await refreshBeadsStatus(ctx);
+      ctx.ui.notify(`Beads mode ${beadsEnabled ? "enabled" : "disabled"}.`, "info");
+    },
+  });
+
   pi.on("session_start", async (_event, ctx) => {
     const info = await runBr(pi, ["info", "--json"]);
     const sessionMode = parseBeadsSessionMode({ brInfoExitCode: info.code });
@@ -843,7 +883,7 @@ export default function beadsExtension(pi: ExtensionAPI) {
     cachedModeText = "";
 
     if (!beadsEnabled) {
-      clearBeadsModeUi(ctx);
+      setBeadsModeUiStatus(ctx);
       return;
     }
 
