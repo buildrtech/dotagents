@@ -136,6 +136,27 @@ test("formatBeadsModeStatus includes in-progress summary", () => {
   assert.equal(status, "beads: stealth (sqlite) · 12 issue(s) · in-progress: bd-1 — One");
 });
 
+test("formatBeadsModeStatus returns off label when beads mode is disabled", () => {
+  const status = formatBeadsModeStatus({
+    beadsEnabled: false,
+    modeText: "stealth (sqlite)",
+    issueCount: 12,
+    inProgressIssues: [{ id: "bd-1", title: "One" }],
+  });
+  assert.equal(status, "beads: off");
+});
+
+test("formatBeadsModeStatus shows on-without-project label", () => {
+  const status = formatBeadsModeStatus({
+    beadsEnabled: true,
+    isBeadsProject: false,
+    modeText: "stealth (sqlite)",
+    issueCount: 12,
+    inProgressIssues: [{ id: "bd-1", title: "One" }],
+  });
+  assert.equal(status, "beads: on (no project)");
+});
+
 test("parseBrShowJson extracts issue with comments", () => {
   const json = JSON.stringify([{
     id: "bd-1",
