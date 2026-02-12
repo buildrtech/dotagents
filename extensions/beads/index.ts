@@ -12,6 +12,7 @@ import {
   formatIssueLabel,
   isBrCloseCommand,
   parseBrInfoJson,
+  parseBeadsSessionMode,
   parseBrReadyJson,
   parseBrShowJson,
   shouldShowContextReminder,
@@ -175,6 +176,7 @@ export default function beadsExtension(pi: ExtensionAPI) {
   type UiContext = { ui: { setStatus: (key: string, value?: string) => void } };
 
   let isBeadsProject = false;
+  let beadsEnabled = false;
   let shouldPrime = false;
   let contextReminderShown = false;
   let cachedModeText = "";
@@ -822,28 +824,29 @@ export default function beadsExtension(pi: ExtensionAPI) {
 
   pi.on("session_start", async (_event, ctx) => {
     const info = await runBr(pi, ["info", "--json"]);
+    const sessionMode = parseBeadsSessionMode({ brInfoExitCode: info.code });
 
-    if (info.code !== 0) {
-      isBeadsProject = false;
-      shouldPrime = false;
+    isBeadsProject = sessionMode.isBeadsProject;
+    beadsEnabled = sessionMode.beadsEnabled;
+    shouldPrime = beadsEnabled;
+    cachedModeText = "";
+
+    if (!beadsEnabled) {
       clearBeadsModeUi(ctx);
       return;
     }
 
-    isBeadsProject = true;
-    shouldPrime = true;
-    cachedModeText = "";
     await refreshBeadsStatus(ctx);
   });
 
   pi.on("session_before_compact", async () => {
-    if (isBeadsProject) {
+    if (beadsEnabled) {
       shouldPrime = true;
     }
   });
 
   pi.on("before_agent_start", async () => {
-    if (!isBeadsProject || !shouldPrime) {
+    if (!beadsEnabled || !shouldPrime) {
       return;
     }
 
@@ -874,6 +877,10 @@ export default function beadsExtension(pi: ExtensionAPI) {
   });
 
   pi.on("tool_call", async (event) => {
+    if (!beadsEnabled) {
+      return;
+    }
+
     if (event.toolName !== "bash") {
       return;
     }
@@ -898,6 +905,10 @@ export default function beadsExtension(pi: ExtensionAPI) {
   });
 
   pi.on("turn_end", async (_event, ctx) => {
+    if (!beadsEnabled) {
+      return;
+    }
+
     const usage = ctx.getContextUsage();
     if (!usage) {
       return;
