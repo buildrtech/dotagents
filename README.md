@@ -31,6 +31,7 @@ These methodology skills improve AI agent effectiveness:
 | `receiving-code-review` | Technical rigor when implementing feedback |
 | `requesting-code-review` | Verify work meets requirements before merging |
 | `semantic-commit` | Conventional commits for clear history |
+| `fetch-ci-build` | Fetch CI build results and diagnose failures across CI providers |
 
 ## Commands
 
