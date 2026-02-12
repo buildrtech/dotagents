@@ -202,6 +202,20 @@ test("parseBrShowJson extracts issue with comments", () => {
   assert.equal(issue?.comments?.[1]?.text, "Tests passing");
 });
 
+test("parseBrShowJson drops malformed comment entries", () => {
+  const json = JSON.stringify([{
+    id: "bd-1",
+    title: "Do thing",
+    comments: [
+      { id: 1, issue_id: "bd-1", author: "alice", text: "Valid", created_at: "2026-01-01T00:00:00Z" },
+      { text: "Missing metadata" },
+    ],
+  }]);
+  const issue = parseBrShowJson(json);
+  assert.equal(issue?.comments?.length, 1);
+  assert.equal(issue?.comments?.[0]?.text, "Valid");
+});
+
 test("parseBrShowJson captures description", () => {
   const json = JSON.stringify([{
     id: "bd-1",
