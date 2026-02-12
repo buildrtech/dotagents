@@ -62,7 +62,9 @@ export function shouldShowContextReminder(args: {
   usagePercent: number;
   thresholdPercent: number;
   alreadyShown: boolean;
+  beadsEnabled?: boolean;
 }): boolean {
+  if (args.beadsEnabled === false) return false;
   if (args.alreadyShown) return false;
   return args.usagePercent >= args.thresholdPercent;
 }
@@ -140,7 +142,20 @@ export function formatIssueCard(issue: BrShowIssue): string[] {
   return lines;
 }
 
-export function buildBeadsPrimeMessage(resumeContext?: string): string {
+export function getBeadsModeOffMessage(): string {
+  return "Beads mode is off. Press Ctrl+B to enable.";
+}
+
+export function buildBeadsPrimeMessage(
+  args?: string | { beadsEnabled?: boolean; resumeContext?: string },
+): string {
+  const beadsEnabled = typeof args === "object" && args !== null ? args.beadsEnabled ?? true : true;
+  const resumeContext = typeof args === "string" ? args : args?.resumeContext;
+
+  if (!beadsEnabled) {
+    return "";
+  }
+
   const lines = [
     "# Beads Workflow Context",
     "",
