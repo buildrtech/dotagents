@@ -192,10 +192,20 @@ export function summarizeInProgressIssue(issues: BrIssueSummary[]): string {
 }
 
 export function formatBeadsModeStatus(args: {
+  beadsEnabled?: boolean;
+  isBeadsProject?: boolean;
   modeText: string;
   issueCount: number;
   inProgressIssues: BrIssueSummary[];
 }): string {
+  if (args.beadsEnabled === false) {
+    return "beads: off";
+  }
+
+  if (args.isBeadsProject === false) {
+    return "beads: on (no project)";
+  }
+
   return `beads: ${args.modeText} · ${args.issueCount} issue(s) · in-progress: ${summarizeInProgressIssue(args.inProgressIssues)}`;
 }
 
