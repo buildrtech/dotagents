@@ -8,6 +8,8 @@ export type BrIssueSummary = {
   status?: string;
 };
 
+export type BeadsAction = "ready" | "show" | "claim" | "close" | "comment" | "create" | "status";
+
 export const DIRTY_TREE_CLOSE_WARNING =
   "Warning: Issue closed. You still have uncommitted changes — run @semantic-commit before continuing.";
 
@@ -216,6 +218,66 @@ export function formatBeadsModeStatus(args: {
   }
 
   return `beads: ${args.modeText} · ${args.issueCount} issue(s) · in-progress: ${summarizeInProgressIssue(args.inProgressIssues)}`;
+}
+
+export function summarizeBeadsActionResult(action: BeadsAction, stdout: string): string {
+  const firstLine = stdout.split("\n").find((line) => line.trim().length > 0)?.trim() ?? "";
+
+  switch (action) {
+    case "create": {
+      const match = firstLine.match(/Created\s+(\S+):\s+(.+)/);
+      if (match) return `Created ${match[1]} — ${match[2]}`;
+      return firstLine || "created";
+    }
+
+    case "claim": {
+      const idMatch = firstLine.match(/Updated\s+(\S+):\s+(.+)/);
+      if (idMatch) return `Claimed ${idMatch[1]} — ${idMatch[2]}`;
+      return firstLine || "claimed";
+    }
+
+    case "close": {
+      const match = firstLine.match(/Closed\s+(\S+):\s+(.+)/);
+      if (match) return `Closed ${match[1]} — ${match[2]}`;
+      return firstLine || "closed";
+    }
+
+    case "comment": {
+      const match = firstLine.match(/Comment added to\s+(\S+)/);
+      if (match) return `Comment added to ${match[1]}`;
+      return firstLine || "comment added";
+    }
+
+    case "ready": {
+      const lines = stdout
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      if (!lines.length || /no\s+(open|ready)/i.test(firstLine)) return "No ready issues";
+      return `${lines.length} ready issue(s)`;
+    }
+
+    case "show": {
+      const match = firstLine.match(/[○●✓✗]\s+(\S+)\s+·\s+(.+?)\s+\[/);
+      if (match) return `${match[1]} — ${match[2].trim()}`;
+      return firstLine || "shown";
+    }
+
+    case "status": {
+      const total = stdout.match(/Total Issues:\s+(\d+)/);
+      const open = stdout.match(/Open:\s+(\d+)/);
+      const inProgress = stdout.match(/In Progress:\s+(\d+)/);
+      const closed = stdout.match(/Closed:\s+(\d+)/);
+      if (total) {
+        const parts = [`${total[1]} total`];
+        if (open && open[1] !== "0") parts.push(`${open[1]} open`);
+        if (inProgress && inProgress[1] !== "0") parts.push(`${inProgress[1]} in-progress`);
+        if (closed && closed[1] !== "0") parts.push(`${closed[1]} closed`);
+        return parts.join(", ");
+      }
+      return firstLine || "status";
+    }
+  }
 }
 
 function normalizeIssueRow(row: unknown): BrIssueSummary | null {
