@@ -22,6 +22,17 @@ export function parseBrInfoJson(json: string): { mode: string; issueCount: numbe
   }
 }
 
+export function parseBeadsSessionMode(args: { brInfoExitCode: number }): {
+  isBeadsProject: boolean;
+  beadsEnabled: boolean;
+} {
+  const isBeadsProject = args.brInfoExitCode === 0;
+  return {
+    isBeadsProject,
+    beadsEnabled: isBeadsProject,
+  };
+}
+
 export function parseBrReadyJson(json: string): BrIssueSummary[] {
   try {
     const parsed = JSON.parse(json) as unknown;
