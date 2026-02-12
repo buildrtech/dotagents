@@ -10,6 +10,7 @@ import {
   formatBeadsModeStatus,
   formatIssueCard,
   formatIssueLabel,
+  getBeadsModeOffMessage,
   isBrCloseCommand,
   parseBrInfoJson,
   parseBeadsSessionMode,
@@ -266,6 +267,16 @@ export default function beadsExtension(pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const input = params as BeadsToolInput;
+
+      if (!beadsEnabled) {
+        return {
+          content: [{ type: "text" as const, text: getBeadsModeOffMessage() }],
+          details: {
+            action: input.action,
+            beadsEnabled,
+          },
+        };
+      }
 
       const fail = (message: string, details: Record<string, unknown>) => {
         const summary = extractErrorSummary(details.stderr) ?? extractErrorSummary(details.stdout);
