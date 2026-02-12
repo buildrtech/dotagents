@@ -17,9 +17,27 @@ const BEADS_MODE_OFF_MESSAGE = "Beads mode is off. Press Ctrl+B to enable.";
 const BEADS_STATUS_OFF = "beads: off";
 const BEADS_STATUS_ON_NO_PROJECT = "beads: on (no project)";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isBrComment(value: unknown): value is BrComment {
+  if (!isRecord(value)) return false;
+
+  return (
+    typeof value.id === "number" &&
+    typeof value.issue_id === "string" &&
+    typeof value.author === "string" &&
+    typeof value.text === "string" &&
+    typeof value.created_at === "string"
+  );
+}
+
 export function parseBrInfoJson(json: string): { mode: string; issueCount: number } | null {
   try {
-    const parsed = JSON.parse(json) as { mode?: unknown; issue_count?: unknown };
+    const parsed = JSON.parse(json) as unknown;
+    if (!isRecord(parsed)) return null;
+
     const mode = typeof parsed.mode === "string" && parsed.mode.trim() ? parsed.mode : "unknown";
     const issueCount = typeof parsed.issue_count === "number" ? parsed.issue_count : 0;
     return { mode, issueCount };
@@ -44,8 +62,8 @@ export function parseBrReadyJson(json: string): BrIssueSummary[] {
     const parsed = JSON.parse(json) as unknown;
     const rows = Array.isArray(parsed)
       ? parsed
-      : parsed && typeof parsed === "object" && Array.isArray((parsed as { issues?: unknown }).issues)
-        ? (parsed as { issues: unknown[] }).issues
+      : isRecord(parsed) && Array.isArray(parsed.issues)
+        ? parsed.issues
         : [];
 
     return rows
@@ -93,18 +111,19 @@ export function parseBrShowJson(json: string): BrShowIssue | null {
     const parsed = JSON.parse(json) as unknown;
     const arr = Array.isArray(parsed) ? parsed : [parsed];
     if (!arr.length) return null;
+
     const row = arr[0];
     const base = normalizeIssueRow(row);
     if (!base) return null;
+    if (!isRecord(row)) return null;
 
-    const raw = row as { description?: unknown; comments?: unknown };
-    const description = typeof raw.description === "string" && raw.description.trim() ? raw.description : undefined;
+    const description = typeof row.description === "string" && row.description.trim() ? row.description : undefined;
 
     const comments: BrComment[] = [];
-    if (Array.isArray(raw.comments)) {
-      for (const c of raw.comments) {
-        if (c && typeof c === "object" && typeof (c as BrComment).text === "string") {
-          comments.push(c as BrComment);
+    if (Array.isArray(row.comments)) {
+      for (const comment of row.comments) {
+        if (isBrComment(comment)) {
+          comments.push(comment);
         }
       }
     }
@@ -281,24 +300,16 @@ export function summarizeBeadsActionResult(action: BeadsAction, stdout: string):
 }
 
 function normalizeIssueRow(row: unknown): BrIssueSummary | null {
-  if (!row || typeof row !== "object") return null;
-  const data = row as {
-    id?: unknown;
-    title?: unknown;
-    type?: unknown;
-    issue_type?: unknown;
-    priority?: unknown;
-    status?: unknown;
-  };
+  if (!isRecord(row)) return null;
 
-  if (typeof data.id !== "string" || !data.id.trim()) return null;
-  const title = typeof data.title === "string" && data.title.trim() ? data.title : "(untitled issue)";
+  if (typeof row.id !== "string" || !row.id.trim()) return null;
+  const title = typeof row.title === "string" && row.title.trim() ? row.title : "(untitled issue)";
 
   return {
-    id: data.id,
+    id: row.id,
     title,
-    type: typeof data.type === "string" ? data.type : typeof data.issue_type === "string" ? data.issue_type : undefined,
-    priority: typeof data.priority === "number" ? data.priority : undefined,
-    status: typeof data.status === "string" ? data.status : undefined,
+    type: typeof row.type === "string" ? row.type : typeof row.issue_type === "string" ? row.issue_type : undefined,
+    priority: typeof row.priority === "number" ? row.priority : undefined,
+    status: typeof row.status === "string" ? row.status : undefined,
   };
 }

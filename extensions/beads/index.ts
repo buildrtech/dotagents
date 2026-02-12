@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { isToolCallEventType, type ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { StringEnum } from "@mariozechner/pi-ai";
 import { Text } from "@mariozechner/pi-tui";
 import { type Static, Type } from "@sinclair/typebox";
@@ -148,14 +148,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function isBeadsAction(value: unknown): value is BeadsAction {
+  return (
+    value === "ready" ||
+    value === "show" ||
+    value === "claim" ||
+    value === "close" ||
+    value === "comment" ||
+    value === "create" ||
+    value === "status"
+  );
+}
+
 function parseBeadsToolDetails(details: unknown): BeadsToolDetails | null {
-  if (!isRecord(details) || typeof details.action !== "string") {
+  if (!isRecord(details) || !isBeadsAction(details.action)) {
     return null;
   }
 
   if (details.beadsEnabled === false) {
     return {
-      action: details.action as BeadsAction,
+      action: details.action,
       beadsEnabled: false,
     };
   }
@@ -1040,12 +1052,11 @@ export default function beadsExtension(pi: ExtensionAPI) {
       return;
     }
 
-    if (event.toolName !== "bash") {
+    if (!isToolCallEventType("bash", event)) {
       return;
     }
 
-    const input = event.input as { command?: unknown };
-    const command = typeof input.command === "string" ? input.command : "";
+    const command = event.input.command;
     if (!isBrCloseCommand(command)) {
       return;
     }
