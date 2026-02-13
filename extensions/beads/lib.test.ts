@@ -18,6 +18,7 @@ import {
   summarizeBeadsActionResult,
   DIRTY_TREE_CLOSE_WARNING,
 } from "./lib.ts";
+import * as lib from "./lib.ts";
 
 test("parseBrInfoJson parses mode and issue_count", () => {
   const parsed = parseBrInfoJson('{"mode":"sqlite","issue_count":4}');
@@ -328,4 +329,25 @@ test("buildBeadsPrimeMessage appends resume context when provided", () => {
 
 test("dirty tree close warning text includes semantic-commit guidance", () => {
   assert.match(DIRTY_TREE_CLOSE_WARNING, /semantic-commit/);
+});
+
+test("observability helper is exposed for lifecycle diagnostics", () => {
+  assert.equal(typeof (lib as Record<string, unknown>).buildObservabilitySummary, "function");
+});
+
+test("observability helper can suppress noisy events when disabled", () => {
+  const maybeFn = (lib as Record<string, unknown>).buildObservabilitySummary;
+  assert.equal(typeof maybeFn, "function");
+
+  const summary = (maybeFn as (input: {
+    enabled: boolean;
+    eventType: string;
+    toolName?: string;
+  }) => string | null)({
+    enabled: false,
+    eventType: "tool_execution_update",
+    toolName: "beads",
+  });
+
+  assert.equal(summary, null);
 });
