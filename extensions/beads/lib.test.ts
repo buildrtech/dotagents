@@ -93,6 +93,17 @@ test("shouldShowContextReminder suppresses reminders when beads mode is disabled
   );
 });
 
+test("shouldShowContextReminder treats unknown usage as not remindable", () => {
+  assert.equal(
+    shouldShowContextReminder({
+      usagePercent: null as unknown as number,
+      thresholdPercent: -1,
+      alreadyShown: false,
+    }),
+    false,
+  );
+});
+
 test("buildBeadsPrimeMessage contains anti-TodoWrite guardrail", () => {
   const text = buildBeadsPrimeMessage();
   assert.match(text, /Use beads for ALL task tracking/);
