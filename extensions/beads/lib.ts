@@ -83,13 +83,14 @@ export function isBrCloseCommand(command: string): boolean {
 }
 
 export function shouldShowContextReminder(args: {
-  usagePercent: number;
+  usagePercent: number | null;
   thresholdPercent: number;
   alreadyShown: boolean;
   beadsEnabled?: boolean;
 }): boolean {
   if (args.beadsEnabled === false) return false;
   if (args.alreadyShown) return false;
+  if (args.usagePercent === null) return false;
   return args.usagePercent >= args.thresholdPercent;
 }
 
