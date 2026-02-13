@@ -26,7 +26,17 @@ Provide extension-level execution UX for beads while keeping planning/reasoning 
 - `session_before_compact`: re-arm one-time beads priming
 - `before_agent_start`: inject hidden `beads-prime` message with beads guardrails
 - `tool_call`: block `br close` if git working tree is dirty
+- `message_start`: optional low-noise observability summary (opt-in)
+- `tool_execution_end`: optional tool lifecycle observability summary (opt-in)
 - `turn_end`: show one-time high-context reminder at 85%+
+
+## Observability (opt-in)
+
+Enable low-noise lifecycle diagnostics with:
+
+- `pi --beads-observe`
+
+When enabled, the extension emits concise `obs:` lines for selected lifecycle events. By default this is disabled, and noisy streaming updates are suppressed.
 
 ## Extension-vs-skill boundary
 

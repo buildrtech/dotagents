@@ -4,6 +4,7 @@ import { Text } from "@mariozechner/pi-tui";
 import { type Static, Type } from "@sinclair/typebox";
 import {
   buildBeadsPrimeMessage,
+  buildObservabilitySummary,
   buildResumeContext,
   detectTrackingMode,
   DIRTY_TREE_CLOSE_WARNING,
@@ -307,6 +308,14 @@ export default function beadsExtension(pi: ExtensionAPI) {
   let shouldPrime = false;
   let contextReminderShown = false;
   let cachedModeText = "";
+
+  pi.registerFlag("beads-observe", {
+    description: "Enable low-noise beads observability diagnostics",
+    type: "boolean",
+    default: false,
+  });
+
+  const isObservabilityEnabled = () => Boolean(pi.getFlag("--beads-observe"));
 
   const clearBeadsModeUi = (ctx: UiContext) => {
     ctx.ui.setStatus("beads-mode", undefined);
@@ -1071,6 +1080,34 @@ export default function beadsExtension(pi: ExtensionAPI) {
         block: true,
         reason: "Cannot run `br close` with uncommitted changes. Commit/stash first, then close the issue.",
       };
+    }
+  });
+
+  pi.on("message_start", async (_event, ctx) => {
+    if (!beadsEnabled) return;
+
+    const summary = buildObservabilitySummary({
+      enabled: isObservabilityEnabled(),
+      eventType: "message_start",
+    });
+
+    if (summary) {
+      commandOut(ctx, summary, "info");
+    }
+  });
+
+  pi.on("tool_execution_end", async (event, ctx) => {
+    if (!beadsEnabled) return;
+
+    const summary = buildObservabilitySummary({
+      enabled: isObservabilityEnabled(),
+      eventType: "tool_execution_end",
+      toolName: event.toolName,
+      isError: event.isError,
+    });
+
+    if (summary) {
+      commandOut(ctx, summary, event.isError ? "warning" : "info");
     }
   });
 

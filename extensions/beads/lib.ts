@@ -94,6 +94,35 @@ export function shouldShowContextReminder(args: {
   return args.usagePercent >= args.thresholdPercent;
 }
 
+export function buildObservabilitySummary(input: {
+  enabled: boolean;
+  eventType: "message_start" | "message_end" | "tool_execution_start" | "tool_execution_update" | "tool_execution_end" | string;
+  toolName?: string;
+  isError?: boolean;
+}): string | null {
+  if (!input.enabled) return null;
+
+  if (input.eventType === "tool_execution_update") {
+    // Streaming updates are too noisy for default diagnostics.
+    return null;
+  }
+
+  if (input.eventType === "tool_execution_start") {
+    return `obs: tool start ${input.toolName ?? "unknown"}`;
+  }
+
+  if (input.eventType === "tool_execution_end") {
+    const suffix = input.isError ? " (error)" : "";
+    return `obs: tool end ${input.toolName ?? "unknown"}${suffix}`;
+  }
+
+  if (input.eventType === "message_start" || input.eventType === "message_end") {
+    return `obs: ${input.eventType}`;
+  }
+
+  return null;
+}
+
 export type BrComment = {
   id: number;
   issue_id: string;
