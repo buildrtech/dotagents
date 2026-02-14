@@ -1,0 +1,9 @@
+{
+  "name": "buildr-dotagents",
+  "version": "0.1.0",
+  "description": "Reusable skills for AI coding agents",
+  "keywords": ["pi-package"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}
