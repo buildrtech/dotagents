@@ -49,6 +49,12 @@ make install
 | `document-writing` | Verification-first technical documentation writing |
 | `prompt-writing` | Anthropic-oriented prompt and skill authoring patterns |
 
+### Code Search
+
+| Skill | Description |
+|-------|-------------|
+| `ast-grep` | Structural code search and ast-grep rule authoring for AST-based queries |
+
 ### Planning / Issue Management
 
 | Skill | Description |
