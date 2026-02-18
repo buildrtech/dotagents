@@ -1,69 +1,54 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  createProfilerState,
-  recordSample,
+  createCollector,
+  recordInvocation,
   summarizeByExtension,
   wrapHandler,
 } from "./lib.ts";
 
-test("summarizeByExtension aggregates ms by extension path", () => {
-  const state = createProfilerState();
+test("compat exports provide extension aggregation", () => {
+  const collector = createCollector({ maxHandlers: 10_000 });
 
-  recordSample(state, { extensionPath: "a.ts", eventType: "turn_start", ms: 10, ok: true });
-  recordSample(state, { extensionPath: "a.ts", eventType: "turn_end", ms: 15, ok: true });
-  recordSample(state, { extensionPath: "b.ts", eventType: "turn_start", ms: 5, ok: true });
+  recordInvocation(collector, {
+    extensionPath: "a.ts",
+    surface: "event",
+    name: "turn_start",
+    ms: 10,
+    ok: true,
+  });
+  recordInvocation(collector, {
+    extensionPath: "a.ts",
+    surface: "event",
+    name: "turn_end",
+    ms: 15,
+    ok: true,
+  });
 
-  assert.deepEqual(summarizeByExtension(state), [
-    { extensionPath: "a.ts", totalMs: 25, calls: 2 },
-    { extensionPath: "b.ts", totalMs: 5, calls: 1 },
+  assert.deepEqual(summarizeByExtension(collector), [
+    { extensionPath: "a.ts", totalMs: 25, calls: 2, maxMs: 15, errorCount: 0 },
   ]);
 });
 
-test("wrapHandler records duration and success", async () => {
-  const state = createProfilerState();
+test("wrapHandler alias still records durations", async () => {
+  const collector = createCollector({ maxHandlers: 10_000 });
   const ticks = [100, 140];
   const now = () => ticks.shift() ?? 140;
 
   const wrapped = wrapHandler({
     extensionPath: "slow-a.ts",
     eventType: "turn_start",
+    collector,
     handler: async () => {
       // noop
     },
-    state,
     now,
   });
 
   await wrapped({ type: "turn_start" }, {});
 
-  const rows = summarizeByExtension(state);
+  const rows = summarizeByExtension(collector);
   assert.equal(rows[0]?.extensionPath, "slow-a.ts");
   assert.equal(rows[0]?.calls, 1);
   assert.equal(rows[0]?.totalMs, 40);
-});
-
-test("wrapHandler is idempotent for already wrapped handler", () => {
-  const state = createProfilerState();
-  const now = () => 0;
-
-  const original = async () => {};
-
-  const once = wrapHandler({
-    extensionPath: "a.ts",
-    eventType: "turn_start",
-    handler: original,
-    state,
-    now,
-  });
-
-  const twice = wrapHandler({
-    extensionPath: "a.ts",
-    eventType: "turn_start",
-    handler: once,
-    state,
-    now,
-  });
-
-  assert.equal(once, twice);
 });

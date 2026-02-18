@@ -15,6 +15,7 @@ async function callTimed(args: {
   name: string;
   collector: Collector;
   now?: () => number;
+  shouldRecord?: () => boolean;
   fn: Fn;
   thisArg: unknown;
   callArgs: unknown[];
@@ -28,6 +29,10 @@ async function callTimed(args: {
     ok = true;
     return result;
   } finally {
+    if (args.shouldRecord && !args.shouldRecord()) {
+      return;
+    }
+
     const ms = Math.max(0, now() - start);
     recordInvocation(args.collector, {
       extensionPath: args.extensionPath,
@@ -46,6 +51,7 @@ function wrapWithTiming(args: {
   collector: Collector;
   handler: Fn;
   now?: () => number;
+  shouldRecord?: () => boolean;
 }): Fn {
   if (isWrapped(args.handler)) return args.handler;
 
@@ -56,6 +62,7 @@ function wrapWithTiming(args: {
       name: args.name,
       collector: args.collector,
       now: args.now,
+      shouldRecord: args.shouldRecord,
       fn: args.handler,
       thisArg: this,
       callArgs,
@@ -72,6 +79,7 @@ export function wrapEventHandler(args: {
   collector: Collector;
   handler: Fn;
   now?: () => number;
+  shouldRecord?: () => boolean;
 }): Fn {
   return wrapWithTiming({
     extensionPath: args.extensionPath,
@@ -80,6 +88,7 @@ export function wrapEventHandler(args: {
     collector: args.collector,
     handler: args.handler,
     now: args.now,
+    shouldRecord: args.shouldRecord,
   });
 }
 
@@ -89,6 +98,7 @@ export function wrapCommandHandler(args: {
   collector: Collector;
   handler: Fn;
   now?: () => number;
+  shouldRecord?: () => boolean;
 }): Fn {
   return wrapWithTiming({
     extensionPath: args.extensionPath,
@@ -97,6 +107,7 @@ export function wrapCommandHandler(args: {
     collector: args.collector,
     handler: args.handler,
     now: args.now,
+    shouldRecord: args.shouldRecord,
   });
 }
 
@@ -106,6 +117,7 @@ export function wrapToolExecute(args: {
   collector: Collector;
   handler: Fn;
   now?: () => number;
+  shouldRecord?: () => boolean;
 }): Fn {
   return wrapWithTiming({
     extensionPath: args.extensionPath,
@@ -114,5 +126,6 @@ export function wrapToolExecute(args: {
     collector: args.collector,
     handler: args.handler,
     now: args.now,
+    shouldRecord: args.shouldRecord,
   });
 }

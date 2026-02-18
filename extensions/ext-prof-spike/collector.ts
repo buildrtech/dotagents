@@ -86,3 +86,10 @@ export function summarizeByExtension(collector: Collector) {
 export function summarizeByHandler(collector: Collector) {
   return [...collector.handlerTotals.values()].sort((a, b) => b.totalMs - a.totalMs);
 }
+
+export function resetCollector(collector: Collector): void {
+  collector.extensionTotals.clear();
+  collector.handlerTotals.clear();
+  collector.droppedNewKeys = 0;
+  collector.warnedCardinality = false;
+}

@@ -1,82 +1,33 @@
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import {
-  createProfilerState,
+  createCollector,
+  resetCollector,
   summarizeByExtension,
-  type ExtensionHandler,
-  type ProfilerState,
-  wrapHandler,
-} from "./lib.ts";
-
-type ExtensionLike = {
-  path: string;
-  handlers: Map<string, ExtensionHandler[]>;
-};
-
-type RunnerLike = {
-  extensions: ExtensionLike[];
-};
-
-type PatchStatus = {
-  patched: boolean;
-  reason: string;
-};
+  summarizeByHandler,
+  type Collector,
+} from "./collector.ts";
+import { createController } from "./commands.ts";
+import { formatStatus, formatVerboseReport, type VerboseExtensionRow } from "./formatter.ts";
+import { patchRunnerPrototype, type PatchStatus } from "./patcher.ts";
+import { saveSnapshot } from "./persistence.ts";
 
 const require = createRequire(import.meta.url);
 
-const GLOBAL_STATE_KEY = Symbol.for("ext-prof-spike.state");
-const GLOBAL_PATCHED_KEY = Symbol.for("ext-prof-spike.patched");
+const GLOBAL_PATCHED_KEY = Symbol.for("ext-prof.v1.runner-patched");
+const GLOBAL_PATCH_STATE_KEY = Symbol.for("ext-prof.v1.patch-state");
 
 type GlobalProfiler = typeof globalThis & {
-  [GLOBAL_STATE_KEY]?: ProfilerState;
   [GLOBAL_PATCHED_KEY]?: boolean;
+  [GLOBAL_PATCH_STATE_KEY]?: PatchStatus;
 };
 
 function globals(): GlobalProfiler {
   return globalThis as GlobalProfiler;
-}
-
-function setCurrentState(state: ProfilerState): void {
-  globals()[GLOBAL_STATE_KEY] = state;
-}
-
-function getCurrentState(): ProfilerState | undefined {
-  return globals()[GLOBAL_STATE_KEY];
-}
-
-function formatSummary(state: ProfilerState): string {
-  const rows = summarizeByExtension(state);
-
-  if (!rows.length) {
-    return "No extension samples recorded yet.";
-  }
-
-  return rows
-    .map((row) => `${row.extensionPath}  total=${row.totalMs.toFixed(1)}ms  calls=${row.calls}`)
-    .join("\n");
-}
-
-function wrapRunnerHandlers(runner: RunnerLike): void {
-  const state = getCurrentState();
-  if (!state) return;
-
-  for (const ext of runner.extensions) {
-    for (const [eventType, handlers] of ext.handlers.entries()) {
-      const wrapped = handlers.map((handler) =>
-        wrapHandler({
-          extensionPath: ext.path,
-          eventType,
-          handler,
-          state,
-        })
-      );
-
-      ext.handlers.set(eventType, wrapped);
-    }
-  }
 }
 
 function* walkUpDirectories(startDir: string): Generator<string> {
@@ -115,7 +66,7 @@ function resolveRunnerModuleUrl(): string {
     const found = addCandidate(path.join(path.dirname(pkgEntry), "core", "extensions", "runner.js"));
     if (found) return pathToFileURL(found).href;
   } catch {
-    // fall through to additional discovery strategies
+    // continue
   }
 
   try {
@@ -126,7 +77,7 @@ function resolveRunnerModuleUrl(): string {
       if (found) return pathToFileURL(found).href;
     }
   } catch {
-    // fall through to filesystem search
+    // continue
   }
 
   const seedDirs = [
@@ -138,8 +89,31 @@ function resolveRunnerModuleUrl(): string {
   for (const seed of seedDirs) {
     for (const dir of walkUpDirectories(seed)) {
       const found =
-        addCandidate(path.join(dir, "node_modules", "@mariozechner", "pi-coding-agent", "dist", "core", "extensions", "runner.js")) ??
-        addCandidate(path.join(dir, "lib", "node_modules", "@mariozechner", "pi-coding-agent", "dist", "core", "extensions", "runner.js")) ??
+        addCandidate(
+          path.join(
+            dir,
+            "node_modules",
+            "@mariozechner",
+            "pi-coding-agent",
+            "dist",
+            "core",
+            "extensions",
+            "runner.js",
+          ),
+        ) ??
+        addCandidate(
+          path.join(
+            dir,
+            "lib",
+            "node_modules",
+            "@mariozechner",
+            "pi-coding-agent",
+            "dist",
+            "core",
+            "extensions",
+            "runner.js",
+          ),
+        ) ??
         addCandidate(path.join(dir, "dist", "core", "extensions", "runner.js"));
 
       if (found) {
@@ -152,70 +126,205 @@ function resolveRunnerModuleUrl(): string {
   throw new Error(`unable to locate core/extensions/runner.js.${scanned}`);
 }
 
-async function patchRunnerPrototypeOnce(): Promise<PatchStatus> {
-  const g = globals();
-  if (g[GLOBAL_PATCHED_KEY]) {
-    return { patched: false, reason: "already patched" };
+function buildVerboseRows(collector: Collector): VerboseExtensionRow[] {
+  const byExtension = summarizeByExtension(collector);
+  const handlers = summarizeByHandler(collector);
+
+  const byPath = new Map<string, typeof handlers>();
+  for (const handler of handlers) {
+    const rows = byPath.get(handler.extensionPath) ?? [];
+    rows.push(handler);
+    byPath.set(handler.extensionPath, rows);
   }
 
-  let runnerModule: unknown;
+  return byExtension.map((row) => ({
+    extensionPath: row.extensionPath,
+    calls: row.calls,
+    totalMs: row.totalMs,
+    maxMs: row.maxMs,
+    errorCount: row.errorCount,
+    handlers:
+      byPath.get(row.extensionPath)?.map((h) => ({
+        surface: h.surface,
+        name: h.name,
+        calls: h.calls,
+        totalMs: h.totalMs,
+        maxMs: h.maxMs,
+        errorCount: h.errorCount,
+      })) ?? [],
+  }));
+}
 
-  try {
-    runnerModule = await import(resolveRunnerModuleUrl());
-  } catch (error) {
-    return {
-      patched: false,
-      reason: `runner import failed: ${error instanceof Error ? error.message : String(error)}`,
-    };
-  }
-
-  const ExtensionRunner = (runnerModule as { ExtensionRunner?: { prototype?: { bindCore?: unknown } } }).ExtensionRunner;
-  if (!ExtensionRunner?.prototype || typeof ExtensionRunner.prototype.bindCore !== "function") {
-    return { patched: false, reason: "ExtensionRunner.bindCore not found" };
-  }
-
-  const originalBindCore = ExtensionRunner.prototype.bindCore;
-
-  ExtensionRunner.prototype.bindCore = function patchedBindCore(...args: unknown[]) {
-    const result = originalBindCore.apply(this, args);
-
-    try {
-      wrapRunnerHandlers(this as unknown as RunnerLike);
-    } catch {
-      // Spike: swallow wrapper errors to avoid breaking normal extension flow.
-    }
-
-    return result;
-  };
-
-  g[GLOBAL_PATCHED_KEY] = true;
-  return { patched: true, reason: "patched" };
+function currentProjectName(): string {
+  const base = path.basename(process.cwd());
+  return base || "project";
 }
 
 export default async function extProfilerSpike(pi: ExtensionAPI) {
-  const state = createProfilerState();
-  setCurrentState(state);
+  const collector = createCollector({ maxHandlers: 10_000 });
+  let enabled = false;
 
-  const patchStatus = await patchRunnerPrototypeOnce();
+  let patchState: PatchStatus = {
+    patched: false,
+    reason: "not patched",
+    coverage: {
+      events: "missing",
+      commands: "missing",
+      tools: "missing",
+    },
+  };
+
+  let patchAttempted = false;
+
+  const ensurePatched = async (): Promise<PatchStatus> => {
+    const g = globals();
+    if (g[GLOBAL_PATCH_STATE_KEY]) {
+      patchState = g[GLOBAL_PATCH_STATE_KEY] as PatchStatus;
+      return patchState;
+    }
+
+    if (patchAttempted) {
+      return patchState;
+    }
+
+    patchAttempted = true;
+
+    if (g[GLOBAL_PATCHED_KEY]) {
+      patchState = {
+        patched: false,
+        reason: "already patched",
+        coverage: {
+          events: "missing",
+          commands: "missing",
+          tools: "missing",
+        },
+      };
+      g[GLOBAL_PATCH_STATE_KEY] = patchState;
+      return patchState;
+    }
+
+    let runnerModule: unknown;
+
+    try {
+      runnerModule = await import(resolveRunnerModuleUrl());
+    } catch (error) {
+      patchState = {
+        patched: false,
+        reason: `runner import failed: ${error instanceof Error ? error.message : String(error)}`,
+        coverage: {
+          events: "missing",
+          commands: "missing",
+          tools: "missing",
+        },
+      };
+      g[GLOBAL_PATCH_STATE_KEY] = patchState;
+      return patchState;
+    }
+
+    const ExtensionRunner = (runnerModule as { ExtensionRunner?: { prototype?: { bindCore?: unknown } } })
+      .ExtensionRunner;
+
+    if (!ExtensionRunner?.prototype || typeof ExtensionRunner.prototype.bindCore !== "function") {
+      patchState = {
+        patched: false,
+        reason: "ExtensionRunner.bindCore not found",
+        coverage: {
+          events: "missing",
+          commands: "missing",
+          tools: "missing",
+        },
+      };
+      g[GLOBAL_PATCH_STATE_KEY] = patchState;
+      return patchState;
+    }
+
+    patchState = patchRunnerPrototype({
+      RunnerCtor: ExtensionRunner,
+      collector,
+      shouldRecord: () => enabled,
+    });
+
+    g[GLOBAL_PATCHED_KEY] = true;
+    g[GLOBAL_PATCH_STATE_KEY] = patchState;
+    return patchState;
+  };
+
+  await ensurePatched();
+
+  const controller = createController({
+    patch: ensurePatched,
+    save: async (outputPath: string) => {
+      const aggregates = summarizeByHandler(collector).map((row) => ({
+        extensionPath: row.extensionPath,
+        surface: row.surface,
+        name: row.name,
+        calls: row.calls,
+        totalMs: row.totalMs,
+        maxMs: row.maxMs,
+        errorCount: row.errorCount,
+      }));
+
+      const status = patchState;
+
+      await saveSnapshot({
+        outputPath,
+        sessionMeta: {
+          schemaVersion: 1,
+          project: currentProjectName(),
+          patch: status.reason,
+          patched: status.patched,
+          coverage: status.coverage,
+          savedAt: new Date().toISOString(),
+          overheadGoalPct: 1,
+          enabled,
+        },
+        aggregates,
+      });
+
+      return outputPath;
+    },
+    projectName: currentProjectName(),
+    homeDir: homedir(),
+    reset: () => resetCollector(collector),
+    renderDefault: () => {
+      if (!enabled) {
+        return formatStatus({
+          enabled,
+          patch: patchState,
+          coverage: patchState.coverage,
+        });
+      }
+
+      return formatVerboseReport({
+        rows: buildVerboseRows(collector),
+        patchReason: patchState.reason,
+        overhead: {
+          goalPct: 1,
+          observedPct: null,
+        },
+      });
+    },
+  });
 
   pi.registerCommand("ext-prof", {
-    description: "Show extension total handler runtime (ms)",
-    handler: async (_args, ctx) => {
-      const currentState = getCurrentState() ?? state;
-      const text = [formatSummary(currentState), `patch: ${patchStatus.reason}`].join("\n");
+    description: "Extension profiler controls and report",
+    handler: async (args, ctx) => {
+      const response = await controller.handle(args);
+      enabled = controller.isEnabled();
+      patchState = controller.patchState();
 
       if (ctx.hasUI) {
-        ctx.ui.notify(text, "info");
+        ctx.ui.notify(response, "info");
         return;
       }
 
-      process.stdout.write(`${text}\n`);
+      process.stdout.write(`${response}\n`);
     },
   });
 
   pi.on("session_start", async (_event, ctx) => {
-    if (!patchStatus.patched) {
-      const warning = `ext-prof-spike inactive: ${patchStatus.reason}`;
+    if (!patchState.patched && patchState.reason !== "already patched") {
+      const warning = `ext-prof-spike inactive: ${patchState.reason}`;
       if (ctx.hasUI) {
         ctx.ui.notify(warning, "warning");
       } else {

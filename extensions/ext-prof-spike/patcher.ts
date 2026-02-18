@@ -30,6 +30,7 @@ type ExtensionLike = {
 export function patchRunnerPrototype(args: {
   RunnerCtor: { prototype: { bindCore: (...input: unknown[]) => unknown } };
   collector: Collector;
+  shouldRecord?: () => boolean;
 }): PatchStatus {
   const proto = args.RunnerCtor.prototype as Record<string | symbol, unknown>;
 
@@ -74,6 +75,7 @@ export function patchRunnerPrototype(args: {
                 eventType,
                 collector: args.collector,
                 handler,
+                shouldRecord: args.shouldRecord,
               }),
             ),
           );
@@ -88,6 +90,7 @@ export function patchRunnerPrototype(args: {
             commandName,
             collector: args.collector,
             handler: command.handler,
+            shouldRecord: args.shouldRecord,
           });
         }
         nextCoverage.commands = "instrumented";
@@ -100,6 +103,7 @@ export function patchRunnerPrototype(args: {
             toolName,
             collector: args.collector,
             handler: tool.definition.execute,
+            shouldRecord: args.shouldRecord,
           });
         }
         nextCoverage.tools = "instrumented";
