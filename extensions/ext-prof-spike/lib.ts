@@ -15,6 +15,12 @@ export type ExtensionTotal = {
   calls: number;
 };
 
+export type ExtensionHandler = (event: unknown, ctx: unknown) => Promise<unknown> | unknown;
+
+const WRAPPED_HANDLER = Symbol.for("ext-prof-spike.wrapped-handler");
+
+type WrappedHandler = ExtensionHandler & { [WRAPPED_HANDLER]?: true };
+
 export function createProfilerState(): ProfilerState {
   return { samples: [] };
 }
@@ -40,4 +46,40 @@ export function summarizeByExtension(state: ProfilerState): ExtensionTotal[] {
       calls: row.calls,
     }))
     .sort((a, b) => b.totalMs - a.totalMs);
+}
+
+export function wrapHandler(args: {
+  extensionPath: string;
+  eventType: string;
+  handler: ExtensionHandler;
+  state: ProfilerState;
+  now?: () => number;
+}): ExtensionHandler {
+  const existing = args.handler as WrappedHandler;
+  if (existing[WRAPPED_HANDLER]) {
+    return args.handler;
+  }
+
+  const now = args.now ?? (() => performance.now());
+
+  const wrapped: WrappedHandler = async function wrapped(event: unknown, ctx: unknown) {
+    const start = now();
+    let ok = false;
+
+    try {
+      const result = await args.handler.call(this, event, ctx);
+      ok = true;
+      return result;
+    } finally {
+      recordSample(args.state, {
+        extensionPath: args.extensionPath,
+        eventType: args.eventType,
+        ms: Math.max(0, now() - start),
+        ok,
+      });
+    }
+  };
+
+  wrapped[WRAPPED_HANDLER] = true;
+  return wrapped;
 }
