@@ -39,3 +39,9 @@ Expected shape:
 ./extensions/ext-prof-spike/fixtures/slow-b.ts  total=40.xms   calls=1
 patch: patched
 ```
+
+## Verification notes
+
+- Automated: `cd extensions/ext-prof-spike && npm test` passes.
+- Runtime patching path resolution was hardened to resolve from `@mariozechner/pi-coding-agent` package entry, then import `dist/core/extensions/runner.js` via file URL.
+- Known limitation: this spike wraps event handlers only and keeps metrics in-memory for the current process.
