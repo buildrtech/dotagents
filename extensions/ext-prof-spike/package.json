@@ -1,0 +1,11 @@
+{
+  "name": "ext-prof-spike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx --test lib.test.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0"
+  }
+}
