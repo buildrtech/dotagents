@@ -209,3 +209,10 @@ Given the v1 speed goal, internal monkey-patch remains acceptable. Capability ch
 - Validate across common extension mixes
 - Track known internal API assumptions in README/design docs
 - Reassess stable hook migration after v1 learning
+
+## Verification notes (implementation execution)
+
+- Automated suite: `cd extensions/ext-prof-spike && npm test` passes.
+- Runtime status command confirmed patched coverage output (`events|commands|tools: instrumented`) in CLI check.
+- Runtime report includes overhead status line with warning-only policy when observed overhead exceeds goal.
+- Default snapshot location is `~/.pi/profiles/<project>/<timestamp>.jsonl` and is surfaced by `/ext-prof save` (path behavior also asserted in `commands.test.ts`).
