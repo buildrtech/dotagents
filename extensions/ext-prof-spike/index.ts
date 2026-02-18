@@ -1,3 +1,6 @@
+import { createRequire } from "node:module";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import {
   createProfilerState,
@@ -20,6 +23,8 @@ type PatchStatus = {
   patched: boolean;
   reason: string;
 };
+
+const require = createRequire(import.meta.url);
 
 const GLOBAL_STATE_KEY = Symbol.for("ext-prof-spike.state");
 const GLOBAL_PATCHED_KEY = Symbol.for("ext-prof-spike.patched");
@@ -73,6 +78,13 @@ function wrapRunnerHandlers(runner: RunnerLike): void {
   }
 }
 
+function resolveRunnerModuleUrl(): string {
+  const pkgEntry = require.resolve("@mariozechner/pi-coding-agent");
+  const distDir = path.dirname(pkgEntry);
+  const runnerPath = path.join(distDir, "core", "extensions", "runner.js");
+  return pathToFileURL(runnerPath).href;
+}
+
 async function patchRunnerPrototypeOnce(): Promise<PatchStatus> {
   const g = globals();
   if (g[GLOBAL_PATCHED_KEY]) {
@@ -82,7 +94,7 @@ async function patchRunnerPrototypeOnce(): Promise<PatchStatus> {
   let runnerModule: unknown;
 
   try {
-    runnerModule = await import("@mariozechner/pi-coding-agent/dist/core/extensions/runner.js");
+    runnerModule = await import(resolveRunnerModuleUrl());
   } catch (error) {
     return {
       patched: false,
