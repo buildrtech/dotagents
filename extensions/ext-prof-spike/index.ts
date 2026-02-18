@@ -1,6 +1,7 @@
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import {
   createProfilerState,
@@ -78,11 +79,77 @@ function wrapRunnerHandlers(runner: RunnerLike): void {
   }
 }
 
+function* walkUpDirectories(startDir: string): Generator<string> {
+  let current = path.resolve(startDir);
+  while (true) {
+    yield current;
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+}
+
+function toPath(value: string): string {
+  if (value.startsWith("file://")) {
+    return fileURLToPath(value);
+  }
+  return value;
+}
+
 function resolveRunnerModuleUrl(): string {
-  const pkgEntry = require.resolve("@mariozechner/pi-coding-agent");
-  const distDir = path.dirname(pkgEntry);
-  const runnerPath = path.join(distDir, "core", "extensions", "runner.js");
-  return pathToFileURL(runnerPath).href;
+  const candidates: string[] = [];
+
+  const addCandidate = (candidatePath: string): string | undefined => {
+    const normalized = path.resolve(candidatePath);
+    if (!candidates.includes(normalized)) {
+      candidates.push(normalized);
+    }
+    if (existsSync(normalized)) {
+      return normalized;
+    }
+    return undefined;
+  };
+
+  try {
+    const pkgEntry = require.resolve("@mariozechner/pi-coding-agent");
+    const found = addCandidate(path.join(path.dirname(pkgEntry), "core", "extensions", "runner.js"));
+    if (found) return pathToFileURL(found).href;
+  } catch {
+    // fall through to additional discovery strategies
+  }
+
+  try {
+    if (typeof import.meta.resolve === "function") {
+      const resolved = import.meta.resolve("@mariozechner/pi-coding-agent");
+      const pkgPath = toPath(resolved);
+      const found = addCandidate(path.join(path.dirname(pkgPath), "core", "extensions", "runner.js"));
+      if (found) return pathToFileURL(found).href;
+    }
+  } catch {
+    // fall through to filesystem search
+  }
+
+  const seedDirs = [
+    process.cwd(),
+    process.argv[1] ? path.dirname(process.argv[1]) : undefined,
+    path.dirname(process.execPath),
+  ].filter((value): value is string => typeof value === "string" && value.length > 0);
+
+  for (const seed of seedDirs) {
+    for (const dir of walkUpDirectories(seed)) {
+      const found =
+        addCandidate(path.join(dir, "node_modules", "@mariozechner", "pi-coding-agent", "dist", "core", "extensions", "runner.js")) ??
+        addCandidate(path.join(dir, "lib", "node_modules", "@mariozechner", "pi-coding-agent", "dist", "core", "extensions", "runner.js")) ??
+        addCandidate(path.join(dir, "dist", "core", "extensions", "runner.js"));
+
+      if (found) {
+        return pathToFileURL(found).href;
+      }
+    }
+  }
+
+  const scanned = candidates.length > 0 ? ` Scanned: ${candidates.join(", ")}` : "";
+  throw new Error(`unable to locate core/extensions/runner.js.${scanned}`);
 }
 
 async function patchRunnerPrototypeOnce(): Promise<PatchStatus> {
