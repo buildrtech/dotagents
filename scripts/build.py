@@ -2,27 +2,34 @@
 """
 Build and install custom skills for AI coding agents.
 
-Builds skills from ./skills and installs them for:
+Reads plugins.toml for external repos, builds skills from those plus ./skills,
+and installs them for:
 - Claude Code (~/.claude/skills)
 - OpenCode, Pi, Codex (~/.agents/skills)
 
-Requires Python 3.11+.
+Requires Python 3.11+ (uses tomllib from stdlib).
 """
 
 import argparse
 import shutil
+import subprocess
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 if sys.version_info < (3, 11):
-    sys.exit("Error: Python 3.11+ required")
+    sys.exit("Error: Python 3.11+ required (for tomllib)")
+
+import tomllib
 
 # Directories
 ROOT = Path(__file__).parent.parent
 SKILLS_DIR = ROOT / "skills"
 BUILD_DIR = ROOT / "build"
+EXTERNAL_DIR = BUILD_DIR / "external"
 CONFIGS_DIR = ROOT / "configs"
 GLOBAL_AGENTS_MD = CONFIGS_DIR / "AGENTS.md"
+CONFIG_FILE = ROOT / "plugins.toml"
 
 # Installation paths
 HOME = Path.home()
@@ -32,35 +39,183 @@ INSTALL_PATHS = {
 }
 
 
-def fix_skill_frontmatter_name(content: str, expected_name: str) -> str:
-    """Fix SKILL.md frontmatter `name` to match directory name."""
+def plugin_dir_name(name: str) -> str:
+    """Convert plugin name (owner/repo) to directory name (owner-repo)."""
+    return name.replace("/", "-")
+
+
+@dataclass
+class Plugin:
+    name: str  # owner/repo
+    url: str
+    ref: str | None = None
+    skills_path: list[str] = field(default_factory=lambda: ["skills/*"])
+    skills: list[str] = field(default_factory=list)
+    alias: str | None = None
+
+    @property
+    def dir_name(self) -> str:
+        return plugin_dir_name(self.name)
+
+    @classmethod
+    def from_dict(cls, name: str, data: dict) -> "Plugin":
+        def as_list(val) -> list[str]:
+            if val is None:
+                return []
+            if isinstance(val, str):
+                return [val]
+            return list(val)
+
+        return cls(
+            name=name,
+            url=data["url"],
+            ref=data.get("ref"),
+            skills_path=as_list(data.get("skills_path", "skills/*")),
+            skills=as_list(data.get("skills")),
+            alias=data.get("alias"),
+        )
+
+
+def load_config() -> dict[str, Plugin]:
+    if not CONFIG_FILE.exists():
+        return {}
+    with open(CONFIG_FILE, "rb") as f:
+        data = tomllib.load(f)
+    return {name: Plugin.from_dict(name, cfg) for name, cfg in data.items()}
+
+
+def fetch_plugin(plugin: Plugin) -> Path:
+    """Shallow-clone a plugin repo into build/external/. Returns clone path."""
+    dest = EXTERNAL_DIR / plugin.dir_name
+    if dest.exists():
+        shutil.rmtree(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    cmd = ["git", "clone", "--depth", "1"]
+    if plugin.ref:
+        cmd += ["--branch", plugin.ref]
+    cmd += [plugin.url, str(dest)]
+
+    print(f"  Cloning {plugin.name}...")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"    Error cloning {plugin.name}: {result.stderr.strip()}")
+        return None
+    return dest
+
+
+def find_skill_md(directory: Path) -> Path | None:
+    """Find SKILL.md (case-insensitive) in a directory."""
+    for f in directory.iterdir():
+        if f.is_file() and f.name.lower() == "skill.md":
+            return f
+    return None
+
+
+def glob_paths(base: Path, patterns: list[str]) -> list[Path]:
+    results = []
+    for pattern in patterns:
+        if pattern == ".":
+            results.append(base)
+        else:
+            results.extend(base.glob(pattern))
+    return sorted(set(results))
+
+
+def discover_skills(plugin: Plugin, clone_dir: Path) -> list[tuple[str, Path]]:
+    """Discover skill directories from a cloned plugin."""
+    if not plugin.skills:
+        return []
+
+    include_all = "*" in plugin.skills
+    items = []
+
+    for path in glob_paths(clone_dir, plugin.skills_path):
+        if not path.is_dir():
+            continue
+        if not find_skill_md(path):
+            continue
+        name = path.name
+        if not include_all and name not in plugin.skills:
+            continue
+        final_name = f"{plugin.alias}-{name}" if plugin.alias else name
+        items.append((final_name, path))
+
+    return items
+
+
+def extract_description(content: str) -> str:
+    """Extract a description from the first non-heading paragraph of markdown."""
+    import re
+
+    # Strip any frontmatter
+    stripped = re.sub(r"^---\s*\n.*?\n---\s*\n?", "", content, flags=re.DOTALL)
+
+    for line in stripped.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or line == "---":
+            continue
+        # First real paragraph line — truncate if long
+        if len(line) > 200:
+            line = line[:197] + "..."
+        return line
+
+    return "No description available."
+
+
+def ensure_frontmatter(content: str, name: str) -> str:
+    """Ensure SKILL.md has valid frontmatter with name and description.
+
+    - Missing frontmatter: inject it (derive description from first paragraph)
+    - Existing frontmatter missing fields: add them
+    - Existing name wrong: fix it
+    """
     import re
 
     frontmatter_pattern = r"^---\s*\n(.*?)\n---"
     match = re.match(frontmatter_pattern, content, re.DOTALL)
+
     if not match:
-        return content
+        # No frontmatter at all — inject
+        desc = extract_description(content)
+        frontmatter = f"---\nname: {name}\ndescription: {desc}\n---\n\n"
+        return frontmatter + content
 
     frontmatter = match.group(1)
+    changed = False
+
+    # Fix or add name
     name_pattern = r"^name:\s*(.+)$"
     name_match = re.search(name_pattern, frontmatter, re.MULTILINE)
-    if not name_match:
+    if name_match:
+        current_name = name_match.group(1).strip().strip("\"'")
+        if current_name != name:
+            frontmatter = re.sub(
+                name_pattern, f"name: {name}", frontmatter, flags=re.MULTILINE
+            )
+            changed = True
+    else:
+        frontmatter = f"name: {name}\n" + frontmatter
+        changed = True
+
+    # Fix or add description
+    desc_pattern = r"^description:\s*(.+)$"
+    desc_match = re.search(desc_pattern, frontmatter, re.MULTILINE)
+    if not desc_match:
+        desc = extract_description(content)
+        frontmatter += f"\ndescription: {desc}"
+        changed = True
+
+    if not changed:
         return content
 
-    current_name = name_match.group(1).strip().strip("\"'")
-    if current_name == expected_name:
-        return content
-
-    new_frontmatter = re.sub(
-        name_pattern, f"name: {expected_name}", frontmatter, flags=re.MULTILINE
-    )
-    return content[: match.start(1)] + new_frontmatter + content[match.end(1) :]
+    return content[: match.start(1)] + frontmatter + content[match.end(1) :]
 
 
 def build_skill(name: str, source: Path) -> bool:
-    """Build a single skill from source directory."""
-    skill_md = source / "SKILL.md"
-    if not skill_md.exists():
+    """Build a single skill into build/skills/."""
+    skill_md = find_skill_md(source)
+    if not skill_md:
         print(f"    Warning: {source} has no SKILL.md, skipping")
         return False
 
@@ -69,12 +224,11 @@ def build_skill(name: str, source: Path) -> bool:
     dest = BUILD_DIR / "skills" / name
     dest.mkdir(parents=True, exist_ok=True)
 
-    dest_skill_md = dest / "SKILL.md"
-    skill_content = fix_skill_frontmatter_name(raw_content, name)
-    dest_skill_md.write_text(skill_content)
+    skill_content = ensure_frontmatter(raw_content, name)
+    (dest / "SKILL.md").write_text(skill_content)
 
     for item in source.iterdir():
-        if item.name == "SKILL.md":
+        if item.name.lower() == "skill.md":
             continue
         dest_item = dest / item.name
         if item.is_dir():
@@ -85,8 +239,21 @@ def build_skill(name: str, source: Path) -> bool:
     return True
 
 
-def build_skills() -> None:
-    """Build all custom skills from ./skills."""
+def fetch_plugins(plugins: dict[str, Plugin]) -> dict[str, Path]:
+    """Clone all plugin repos. Returns {name: clone_path}."""
+    if not plugins:
+        return {}
+    print("Fetching plugins...")
+    clones = {}
+    for plugin in plugins.values():
+        clone_dir = fetch_plugin(plugin)
+        if clone_dir:
+            clones[plugin.name] = clone_dir
+    return clones
+
+
+def build_skills(plugins: dict[str, Plugin], clones: dict[str, Path]) -> None:
+    """Build all skills from plugins and ./skills."""
     print("Building skills...")
 
     skills_build = BUILD_DIR / "skills"
@@ -94,16 +261,35 @@ def build_skills() -> None:
         shutil.rmtree(skills_build)
     skills_build.mkdir(parents=True)
 
-    built = 0
+    built = set()
+
+    # Plugin skills first
+    for plugin in plugins.values():
+        clone_dir = clones.get(plugin.name)
+        if not clone_dir:
+            continue
+        for name, path in discover_skills(plugin, clone_dir):
+            if name in built:
+                print(f"    Warning: '{name}' already exists, skipping duplicate from {plugin.name}")
+                continue
+            if build_skill(name, path):
+                print(f"  {name} (from {plugin.name})")
+                built.add(name)
+
+    # Local skills override plugin skills
     if SKILLS_DIR.exists():
         for skill_dir in sorted(SKILLS_DIR.iterdir()):
             if not skill_dir.is_dir():
                 continue
-            if build_skill(skill_dir.name, skill_dir):
-                print(f"  {skill_dir.name}")
-                built += 1
+            name = skill_dir.name
+            if name in built:
+                print(f"  {name} (local override)")
+            if build_skill(name, skill_dir):
+                if name not in built:
+                    print(f"  {name}")
+                built.add(name)
 
-    print(f"  Built {built} skills")
+    print(f"  Built {len(built)} skills")
 
 
 def install_skills() -> None:
@@ -174,15 +360,20 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    plugins = load_config()
+
     if args.command == "build":
-        build_skills()
+        clones = fetch_plugins(plugins)
+        build_skills(plugins, clones)
     elif args.command == "install":
-        build_skills()
+        clones = fetch_plugins(plugins)
+        build_skills(plugins, clones)
         install_skills()
         install_global_agents_md()
         print("\nAll done!")
     elif args.command == "install-skills":
-        build_skills()
+        clones = fetch_plugins(plugins)
+        build_skills(plugins, clones)
         install_skills()
     elif args.command == "clean":
         clean()

@@ -1,0 +1,14 @@
+# plugins.toml - External skill repositories
+#
+# Each plugin is a table keyed by owner/repo:
+#   url         - Git clone URL (required)
+#   ref         - Branch/tag/commit (default: HEAD)
+#   skills_path - Glob pattern(s) to find skill dirs (default: "skills/*")
+#   skills      - List of skill names to install: ["*"] for all, omit for none
+#   alias       - Optional prefix for skill names (to avoid collisions)
+
+["rjs/shaping-skills"]
+url = "https://github.com/rjs/shaping-skills"
+ref = "main"
+skills_path = ["*"]
+skills = ["*"]
