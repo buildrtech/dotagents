@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Resolve the directory this script lives in
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+VENV_PYTHON="$SKILL_DIR/.venv/bin/python"
+
+if [ ! -f "$VENV_PYTHON" ]; then
+    echo "Setting up learnings venv..." >&2
+    uv venv "$SKILL_DIR/.venv" >&2 || { echo "Error: failed to create venv (is uv installed?)" >&2; exit 1; }
+    uv pip install --python "$VENV_PYTHON" "$SKILL_DIR" >&2 || { echo "Error: failed to install dependencies" >&2; exit 1; }
+    echo "Setup complete." >&2
+fi
+
+exec "$VENV_PYTHON" -c "
+import sys, os
+sys.path.insert(0, '$SKILL_DIR')
+from learnings_pkg.cli import main
+main()
+" "$@"
