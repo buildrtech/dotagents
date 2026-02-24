@@ -62,6 +62,13 @@ make install
 | `issue-writing` | Universal user-story and acceptance-criteria issue design |
 | `beads-create` | beads CLI workflow (`br create`, `br update`, `br dep add`) |
 
+### CLI Tools
+
+| Skill | Description |
+|-------|-------------|
+| `linear-cli` | Manage Linear issues, projects, teams, and cycles via `linear-cli` |
+| `buildkite-cli` | Manage Buildkite pipelines, builds, jobs, and agents via `bk` |
+
 ### CI / Build
 
 | Skill | Description |
