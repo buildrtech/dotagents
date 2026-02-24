@@ -38,7 +38,8 @@ Headless environments (Docker, CI, SSH) may not have keyring access — use envi
 ```bash
 linear-cli issue view ENG-123
 linear-cli issue list --assignee @me --limit 10
-linear-cli issue list --project PROJECT-ID --limit 50
+linear-cli issue list --project "Project Name" --limit 50
+linear-cli issue list --project PROJECT-UUID --limit 50
 ```
 
 ### Create
@@ -105,7 +106,7 @@ linear-cli project view PROJECT-ID
 linear-cli cycle list
 linear-cli cycle list --limit 25
 linear-cli cycle view CYCLE-ID
-linear-cli cycle current
+linear-cli cycle current              # exit code 2 if no active cycle — not a failure
 ```
 
 ## Output Formats
@@ -154,3 +155,4 @@ linear-cli project list --csv > projects.csv
 - **@me shorthand**: Use `--assignee @me` for the current authenticated user. Works in both `list`, `create`, and `update`.
 - **Clearing fields**: Pass `null` as the value to clear assignee or project (e.g., `--assignee null`).
 - **No interactive prompts**: Every operation is completable with flags alone. Never expect stdin interaction except `auth login` without `--with-token`.
+- **`--project` accepts names or UUIDs**: You can use `--project "My Project"` — no need to look up the UUID first. Same applies for `--team` (key or ID) and `--state` (name or ID).
