@@ -67,6 +67,7 @@ make install
 |-------|-------------|
 | `linear-cli` | Manage Linear issues, projects, teams, and cycles via `linear-cli` |
 | `buildkite-cli` | Manage Buildkite pipelines, builds, jobs, and agents via `bk` |
+| `notify` | Send desktop/system notifications from terminal workflows |
 
 ### CI / Build
 
