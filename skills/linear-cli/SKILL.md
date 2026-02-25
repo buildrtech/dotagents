@@ -69,6 +69,22 @@ linear-cli issue comment add ENG-123 --body "Started investigation"
 linear-cli issue comments ENG-123 --limit 20
 ```
 
+### Delete
+
+```bash
+linear-cli issue delete ENG-123
+linear-cli issue delete ENG-123 --permanently  # skip 30-day grace period (admin only)
+```
+
+### Search issues
+
+```bash
+linear-cli issue search "login bug"
+linear-cli issue search "caching" --team ENG --include-comments --limit 10
+```
+
+Flags: `--team` (boost results from a specific team), `--include-comments`, `--limit` (default 50).
+
 ### Lifecycle
 
 ```bash
@@ -107,6 +123,42 @@ linear-cli cycle list
 linear-cli cycle list --limit 25
 linear-cli cycle view CYCLE-ID
 linear-cli cycle current              # exit code 2 if no active cycle — not a failure
+```
+
+## Search
+
+Semantic search across issues, projects, documents, and initiatives.
+
+```bash
+linear-cli search "authentication flow"
+linear-cli search "onboarding" --type issue,document --limit 10
+```
+
+Flags: `--type` (comma-separated: issue, project, document, initiative), `--limit` (default 50).
+
+This is different from `issue search` — it searches across all entity types, not just issues.
+
+## Workflow States
+
+```bash
+linear-cli state list
+linear-cli state list --team ENG
+```
+
+Use this to discover valid state names before creating or updating issues.
+
+## Labels
+
+```bash
+linear-cli label list
+linear-cli label list --team ENG
+```
+
+## Users
+
+```bash
+linear-cli user list
+linear-cli user list --limit 100
 ```
 
 ## Output Formats
