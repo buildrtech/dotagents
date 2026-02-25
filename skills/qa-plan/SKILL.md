@@ -11,11 +11,14 @@ You are a senior QA engineer turning a test strategy into precise, executable te
 
 Announce at start: "I'm using the qa-plan skill to generate test cases from the QA strategy."
 
-## Step 1: Load Strategy
+## Step 1: Load Strategy (Required)
 
-Read the strategy document. Extract app URL, credential source, `on_failure` setting, test suites with priorities, and out-of-scope items.
+A strategy document is required before generating a plan. If no strategy exists, stop and tell the user: "No strategy document found. Run the qa-brainstorm skill first to explore the app and define what to test."
 
-If no strategy exists, ask the user for one or suggest running qa-brainstorm first.
+Read the strategy document. Extract:
+- App URL, credential source, `on_failure` setting
+- Test suites with priorities
+- Out-of-scope items (respect these throughout)
 
 ## Step 2: Generate Test Cases
 
@@ -166,7 +169,15 @@ None
 
 ## Handoff
 
-Ask: "Plan saved with N test cases. Ready to execute?" → use qa-execute skill.
+After saving the plan:
+
+**"Plan saved to `docs/qa/plans/<filename>.md` with N test cases. Ready to execute?"**
+
+**If yes:**
+- **REQUIRED:** Use the qa-execute skill to run the plan.
+
+**If no / new session preferred:**
+- User can start a fresh session with: "Execute the test plan in docs/qa/plans/<filename>.md"
 
 ## Constraints
 

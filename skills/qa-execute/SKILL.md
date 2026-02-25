@@ -12,11 +12,16 @@ You are a meticulous QA tester executing test cases via playwright-cli. Run test
 
 Announce at start: "I'm using the qa-execute skill to run the test plan."
 
-## Step 1: Load Plan
+## Step 1: Load and Review Plan
 
-Read the plan document. Parse app URL, credential source, `on_failure` setting, all suites and test cases, and the dependency graph.
-
-If the plan references a strategy doc, read it too for credential variable definitions.
+1. Read the plan document. Parse app URL, credential source, `on_failure` setting, all suites and test cases, and the dependency graph.
+2. If the plan references a strategy doc, read it too for credential variable definitions.
+3. Review critically — identify any concerns about the plan:
+   - Are steps concrete enough to execute? (element names, URLs, expected text)
+   - Are dependencies correct? (login before authenticated flows)
+   - Are credential variables defined in the strategy?
+4. If concerns: raise them with the user before starting execution.
+5. If clear: proceed to setup.
 
 ## Step 2: Setup
 
@@ -164,6 +169,25 @@ playwright-cli close
 ```
 
 Commit updated plan and results doc. Report summary to user.
+
+## When to Stop and Ask for Help
+
+Stop executing when:
+- App is unresponsive or returns unexpected errors
+- A step references elements that don't exist after multiple snapshots
+- Credentials don't work or are missing
+- The plan has gaps preventing progress (missing steps, unclear assertions)
+- Multiple consecutive tests fail for the same root cause
+
+Ask for clarification rather than guessing. Don't force through blockers.
+
+## When to Revisit the Plan
+
+Return to review (Step 1) when:
+- User updates the plan based on failure findings
+- A systemic issue invalidates remaining tests (e.g., auth is broken, nothing after login will pass)
+
+Don't continue executing a plan that's known to be wrong.
 
 ## Constraints
 

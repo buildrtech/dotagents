@@ -62,8 +62,12 @@ Write to `docs/qa/strategy/YYYY-MM-DD-<feature>.md` and commit.
 
 ## Strategy Document Format
 
+Every strategy MUST start with this header:
+
 ```markdown
 # QA Strategy: [Feature/App Name]
+
+> REQUIRED: Use the qa-plan skill to generate test cases from this strategy.
 
 **Date:** YYYY-MM-DD
 **App URL:** <url>
@@ -102,7 +106,15 @@ Write to `docs/qa/strategy/YYYY-MM-DD-<feature>.md` and commit.
 
 ## Handoff
 
-Ask: "Strategy saved. Ready to create a test plan?" → use qa-plan skill.
+After saving the strategy:
+
+**"Strategy saved to `docs/qa/strategy/<filename>.md`. Ready to create a test plan?"**
+
+**If yes:**
+- **REQUIRED:** Use the qa-plan skill to generate test cases from the strategy.
+
+**If no / new session preferred:**
+- User can start a fresh session with: "Create a test plan from docs/qa/strategy/<filename>.md"
 
 ## Constraints
 
