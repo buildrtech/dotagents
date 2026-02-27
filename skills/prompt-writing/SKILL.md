@@ -19,7 +19,7 @@ Guides creation of clear, structured, and effective prompts for Claude Code envi
 ## Outputs
 
 This skill produces:
-- **Agent definitions** (AGENT.md files for subagents)
+- **Agent definitions** (AGENT.md files)
 - **System prompts** (for API usage or CLAUDE.md instructions)
 - **Slash commands** (.md files in commands/)
 - **Skills** (.md files in skills/)
