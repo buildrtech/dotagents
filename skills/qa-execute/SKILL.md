@@ -4,6 +4,7 @@ description: "Execute a QA test plan using playwright-cli. Runs tests in depende
 metadata:
   category: qa
 allowed-tools: Bash(playwright-cli:*)
+disable-model-invocation: true
 ---
 
 # QA Execute

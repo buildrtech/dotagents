@@ -3,6 +3,7 @@ name: qa-plan
 description: "Generate structured, executable test cases from a QA strategy document. Outputs a test plan with checkboxes, dependency ordering, and step-by-step scenarios for qa-execute. Use after qa-brainstorm."
 metadata:
   category: qa
+disable-model-invocation: true
 ---
 
 # QA Plan

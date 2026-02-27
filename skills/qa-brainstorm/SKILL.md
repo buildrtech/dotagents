@@ -4,6 +4,7 @@ description: "Discover what to test in a web application through hybrid interact
 metadata:
   category: qa
 allowed-tools: Bash(playwright-cli:*)
+disable-model-invocation: true
 ---
 
 # QA Brainstorm

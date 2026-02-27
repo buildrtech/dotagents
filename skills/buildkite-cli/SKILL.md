@@ -2,6 +2,7 @@
 name: buildkite-cli
 description: Manage Buildkite from the terminal using the bk CLI for pipelines, builds, jobs, agents, artifacts, and organization configuration.
 allowed-tools: Bash(bk:*)
+disable-model-invocation: true
 ---
 
 # Buildkite CLI with `bk`
