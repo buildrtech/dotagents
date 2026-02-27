@@ -1,6 +1,6 @@
 ---
 name: notify
-description: Send desktop notifications via OSC 777 when long-running work completes.
+description: Send desktop notifications via OSC 777. Use when the user asks to be notified on completion, or after finishing multi-step plans, large refactors, or long builds the user may have walked away from.
 origin: https://github.com/mitsuhiko/agent-stuff/blob/main/pi-extensions/notify.ts
 ---
 
