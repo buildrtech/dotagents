@@ -1,0 +1,13 @@
+# skill-overrides.toml - Frontmatter overrides applied during build
+#
+# Keys are skill names (after aliasing). Values are frontmatter fields
+# to add or replace. These are applied after ensure_frontmatter().
+
+[shaping]
+disable-model-invocation = true
+
+[breadboarding]
+disable-model-invocation = true
+
+[breadboard-reflection]
+disable-model-invocation = true

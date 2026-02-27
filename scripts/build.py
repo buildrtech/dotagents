@@ -30,6 +30,7 @@ EXTERNAL_DIR = BUILD_DIR / "external"
 CONFIGS_DIR = ROOT / "configs"
 GLOBAL_AGENTS_MD = CONFIGS_DIR / "AGENTS.md"
 CONFIG_FILE = ROOT / "plugins.toml"
+SKILL_OVERRIDES_FILE = ROOT / "skill-overrides.toml"
 
 # Installation paths
 HOME = Path.home()
@@ -144,6 +145,45 @@ def discover_skills(plugin: Plugin, clone_dir: Path) -> list[tuple[str, Path]]:
     return items
 
 
+def load_skill_overrides() -> dict[str, dict]:
+    """Load per-skill frontmatter overrides from skill-overrides.toml."""
+    if not SKILL_OVERRIDES_FILE.exists():
+        return {}
+    with open(SKILL_OVERRIDES_FILE, "rb") as f:
+        return tomllib.load(f)
+
+
+def apply_frontmatter_overrides(content: str, overrides: dict[str, str]) -> str:
+    """Add or replace frontmatter fields based on overrides dict."""
+    import re
+
+    if not overrides:
+        return content
+
+    frontmatter_pattern = r"^---\s*\n(.*?)\n---"
+    match = re.match(frontmatter_pattern, content, re.DOTALL)
+    if not match:
+        return content
+
+    frontmatter = match.group(1)
+
+    for key, value in overrides.items():
+        if isinstance(value, bool):
+            yaml_value = "true" if value else "false"
+        else:
+            yaml_value = str(value)
+
+        field_pattern = rf"^{re.escape(key)}:\s*.*$"
+        if re.search(field_pattern, frontmatter, re.MULTILINE):
+            frontmatter = re.sub(
+                field_pattern, f"{key}: {yaml_value}", frontmatter, flags=re.MULTILINE
+            )
+        else:
+            frontmatter += f"\n{key}: {yaml_value}"
+
+    return content[: match.start(1)] + frontmatter + content[match.end(1) :]
+
+
 def extract_description(content: str) -> str:
     """Extract a description from the first non-heading paragraph of markdown."""
     import re
@@ -212,7 +252,7 @@ def ensure_frontmatter(content: str, name: str) -> str:
     return content[: match.start(1)] + frontmatter + content[match.end(1) :]
 
 
-def build_skill(name: str, source: Path) -> bool:
+def build_skill(name: str, source: Path, overrides: dict[str, dict] | None = None) -> bool:
     """Build a single skill into build/skills/."""
     skill_md = find_skill_md(source)
     if not skill_md:
@@ -225,6 +265,11 @@ def build_skill(name: str, source: Path) -> bool:
     dest.mkdir(parents=True, exist_ok=True)
 
     skill_content = ensure_frontmatter(raw_content, name)
+
+    # Apply per-skill frontmatter overrides
+    if overrides and name in overrides:
+        skill_content = apply_frontmatter_overrides(skill_content, overrides[name])
+
     (dest / "SKILL.md").write_text(skill_content)
 
     for item in source.iterdir():
@@ -261,6 +306,7 @@ def build_skills(plugins: dict[str, Plugin], clones: dict[str, Path]) -> None:
         shutil.rmtree(skills_build)
     skills_build.mkdir(parents=True)
 
+    overrides = load_skill_overrides()
     built = set()
 
     # Plugin skills first
@@ -272,7 +318,7 @@ def build_skills(plugins: dict[str, Plugin], clones: dict[str, Path]) -> None:
             if name in built:
                 print(f"    Warning: '{name}' already exists, skipping duplicate from {plugin.name}")
                 continue
-            if build_skill(name, path):
+            if build_skill(name, path, overrides):
                 print(f"  {name} (from {plugin.name})")
                 built.add(name)
 
@@ -284,7 +330,7 @@ def build_skills(plugins: dict[str, Plugin], clones: dict[str, Path]) -> None:
             name = skill_dir.name
             if name in built:
                 print(f"  {name} (local override)")
-            if build_skill(name, skill_dir):
+            if build_skill(name, skill_dir, overrides):
                 if name not in built:
                     print(f"  {name}")
                 built.add(name)
