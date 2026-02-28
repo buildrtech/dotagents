@@ -14,7 +14,7 @@ This skill activates when:
 - Wrapping third-party React components
 - Using Formik or TanStack in React code
 
-For broad TypeScript casting/null/generic policy, apply `@refactoring` and read `skills/refactoring/typescript.md`.
+For broad TypeScript casting/null/generic policy, load the `typescript` skill.
 
 ## 1. Effects: prefer derivation and event handlers
 

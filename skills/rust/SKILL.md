@@ -1,6 +1,17 @@
+---
+name: rust
+description: "Idiomatic Rust patterns, anti-patterns, and code quality detection. Use when writing, reviewing, or refactoring Rust code."
+metadata:
+  category: languages
+---
+
 # Rust
 
-## Dead Code
+Apply these patterns when writing, reviewing, or refactoring Rust code.
+
+## Detection Patterns
+
+### Dead Code
 
 ```bash
 rg "^(pub )?(fn|struct|enum|trait|type|const) \w+" --type rust -o | sort | uniq
@@ -9,7 +20,7 @@ rg "^//.*\n//.*\n//" --multiline --type rust  # commented blocks
 cargo clippy -- -W clippy::pedantic  # reports unused code
 ```
 
-## Types
+### Types
 
 ```bash
 # Type erasure (weak typing)
@@ -27,7 +38,7 @@ rg "fn \w+\([^)]*: bool[,)]" --type rust
 rg "\w+\(true\)|\w+\(false\)" --type rust  # boolean literals at call sites
 ```
 
-## Tests
+### Tests
 
 ```bash
 rg "#\[ignore\]" --type rust
@@ -35,7 +46,7 @@ rg "assert!|assert_eq!" --type rust -c | sort -t: -k2 -n
 cargo test --no-run  # check tests compile
 ```
 
-## Performance
+### Performance
 
 ```bash
 rg "\.collect::<Vec<" --type rust  # collect then iterate

@@ -1,6 +1,15 @@
+---
+name: postgres
+description: "PostgreSQL-specific patterns, index strategies, and safe DDL. Use when working with PostgreSQL databases — writing queries, migrations, or optimizing."
+metadata:
+  category: languages
+---
+
 # PostgreSQL
 
-## Detection
+Apply these patterns when working with PostgreSQL. Load the `sql` skill alongside this one for general SQL patterns.
+
+## Detection Patterns
 
 ```bash
 # Query anti-patterns

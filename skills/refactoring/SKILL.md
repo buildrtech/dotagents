@@ -16,7 +16,7 @@ Systematically analyze the codebase for refactoring opportunities. Output feeds 
 
 ## Process
 
-### Step 1: Detect Languages
+### Step 1: Detect Languages and Load Skills
 
 ```bash
 # Count files by extension to determine project languages
@@ -34,27 +34,25 @@ test -f Gemfile && rg "rails" Gemfile  # Rails
 test -f Gemfile && rg "sorbet" Gemfile  # Sorbet
 ```
 
-### Step 2: Load Language Files
+Based on detected languages, load the corresponding language skills:
 
-Based on detected languages, read the relevant files from this skill directory (`skills/refactoring/`):
+| Detected | Load Skills |
+|----------|-------------|
+| `*.rb` | `ruby` |
+| `*.rb` + Gemfile has rails | `ruby` + `rails` |
+| `*.rb` + Gemfile has sorbet | `ruby` + `sorbet` |
+| `*.ts`, `*.tsx` | `typescript` |
+| `*.py` | `python` |
+| `*.go` | `go` |
+| `*.rs` | `rust` |
+| `*.sql` or migrations | `sql` |
+| PostgreSQL (check database.yml or schema) | `postgres` |
 
-| Detected | Load |
-|----------|------|
-| `*.rb` | `ruby.md` |
-| `*.rb` + Gemfile has rails | `ruby.md` + `rails.md` |
-| `*.rb` + Gemfile has sorbet | `ruby.md` + `sorbet.md` |
-| `*.ts`, `*.tsx` | `typescript.md` |
-| `*.py` | `python.md` |
-| `*.go` | `go.md` |
-| `*.rs` | `rust.md` |
-| `*.sql` or migrations | `sql.md` |
-| PostgreSQL (check database.yml or schema) | `postgres.md` |
+Each language skill contains detection patterns and idiomatic examples for that language.
 
-Each file contains detection patterns and idiomatic examples for that language.
+### Step 2: Run Category Analysis
 
-### Step 3: Run Category Analysis
-
-For each category, apply the language-specific detection patterns.
+For each category, apply the language-specific detection patterns from the loaded skills.
 
 ## Categories
 
@@ -125,7 +123,7 @@ Find performance issues.
 
 ## Output Format
 
-### Step 4: Prioritize Findings
+### Step 3: Prioritize Findings
 
 Group findings by impact:
 
@@ -136,7 +134,7 @@ Group findings by impact:
 | P2 | Code quality improvements |
 | P3 | Nice-to-have cleanups |
 
-### Step 5: Present Summary
+### Step 4: Present Summary
 
 ```markdown
 ## Dead Code (X items)
@@ -173,7 +171,7 @@ Group findings by impact:
 - [ ] Fix N+1 in `OrdersController#index`
 ```
 
-### Step 6: Handoff
+### Step 5: Handoff
 
 ```
 Ready for issue creation. Use this audit to create trackable issues.

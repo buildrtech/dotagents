@@ -1,6 +1,15 @@
+---
+name: rails
+description: "Idiomatic Rails patterns, anti-patterns, and code quality detection. Use when working in a Rails application — writing, reviewing, or refactoring."
+metadata:
+  category: languages
+---
+
 # Rails
 
-## Dead Code
+Apply these patterns when writing, reviewing, or refactoring Rails code. Load the `ruby` skill alongside this one.
+
+## Detection Patterns
 
 ```bash
 rg "scope :\w+" --type ruby  # check if scopes are used
@@ -8,7 +17,7 @@ rg "before_action|after_action" --type ruby  # check if callbacks needed
 rg "helper_method :" --type ruby  # check if helpers used in views
 ```
 
-## Performance
+### Performance
 
 ```bash
 # Eager loading usage
@@ -28,7 +37,7 @@ rg "\.all\b" --type ruby  # unbounded queries
 rg "load_async|async_count|async_sum" --type ruby
 ```
 
-## Anti-Patterns
+### Anti-Patterns
 
 ```bash
 # Callback abuse

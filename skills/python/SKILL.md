@@ -1,13 +1,24 @@
+---
+name: python
+description: "Idiomatic Python patterns, anti-patterns, and code quality detection. Use when writing, reviewing, or refactoring Python code."
+metadata:
+  category: languages
+---
+
 # Python
 
-## Dead Code
+Apply these patterns when writing, reviewing, or refactoring Python code.
+
+## Detection Patterns
+
+### Dead Code
 
 ```bash
 rg "^def \w+|^class \w+" --type py -o | sort | uniq
 rg "^#.*\n#.*\n#" --multiline --type py  # commented blocks
 ```
 
-## Types
+### Types
 
 ```bash
 # Any violations
@@ -26,7 +37,7 @@ rg "def \w+\([^)]*: bool" --type py
 rg "\w+\(True\)|\w+\(False\)" --type py  # boolean literals at call sites
 ```
 
-## Tests
+### Tests
 
 ```bash
 rg "@pytest.mark.skip|@unittest.skip" --type py

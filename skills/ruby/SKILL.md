@@ -1,6 +1,19 @@
+---
+name: ruby
+description: "Idiomatic Ruby patterns, anti-patterns, and code quality detection. Use when writing, reviewing, or refactoring Ruby code."
+metadata:
+  category: languages
+---
+
 # Ruby
 
-## Dead Code
+Apply these patterns when writing, reviewing, or refactoring Ruby code.
+
+## Detection Patterns
+
+Use these to find issues in existing code.
+
+### Dead Code
 
 ```bash
 # Method definitions (compare against calls to find unused)
@@ -16,7 +29,7 @@ rg "def \w+\(.*_\w+" --type ruby
 rg "@@\w+" --type ruby
 ```
 
-## Types
+### Types
 
 ```bash
 # Repeated hash shapes → extract to Data or Struct
@@ -30,7 +43,7 @@ rg "def \w+\([^)]*: (true|false|Boolean)" --type ruby
 rg "\w+\((true|false)(,|\))" --type ruby  # boolean literals at call sites
 ```
 
-## Tests
+### Tests
 
 ```bash
 # Skipped/pending tests
@@ -40,7 +53,7 @@ rg "(skip|pending)" --glob "*_spec.rb" --glob "*_test.rb"
 rg "(expect|assert)" --type ruby -c | sort -t: -k2 -n
 ```
 
-## Complexity
+### Complexity
 
 ```bash
 # Deep nesting (4+ levels / 8+ spaces)
@@ -53,7 +66,7 @@ rg "\.\w+.*\.\w+.*\.\w+.*\.\w+" --type ruby
 rg "\.each.*do.*\n.*\.each.*do" --multiline --type ruby
 ```
 
-## Performance
+### Performance
 
 ```bash
 # N+1 queries (find/where inside loop)

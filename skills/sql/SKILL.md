@@ -1,6 +1,15 @@
+---
+name: sql
+description: "SQL query patterns, anti-patterns, and index guidelines. Use when writing, reviewing, or refactoring SQL queries."
+metadata:
+  category: languages
+---
+
 # SQL
 
-## Detection
+Apply these patterns when writing, reviewing, or refactoring SQL queries.
+
+## Detection Patterns
 
 ```bash
 rg "SELECT \*" --glob "*.sql"  # select specific columns

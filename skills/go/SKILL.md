@@ -1,6 +1,17 @@
+---
+name: go
+description: "Idiomatic Go patterns, anti-patterns, and code quality detection. Use when writing, reviewing, or refactoring Go code."
+metadata:
+  category: languages
+---
+
 # Go
 
-## Dead Code
+Apply these patterns when writing, reviewing, or refactoring Go code.
+
+## Detection Patterns
+
+### Dead Code
 
 ```bash
 rg "^func \w+" --type go -o | sort | uniq
@@ -8,7 +19,7 @@ rg "^//.*\n//.*\n//" --multiline --type go  # commented blocks
 staticcheck ./...  # reports unused code
 ```
 
-## Types
+### Types
 
 ```bash
 # Empty interface (weak typing)
@@ -24,7 +35,7 @@ rg "func \w+\([^)]*bool[,)]" --type go
 rg "\w+\(true\)|\w+\(false\)" --type go  # boolean literals at call sites
 ```
 
-## Tests
+### Tests
 
 ```bash
 rg "t\.Skip\(" --type go
@@ -32,7 +43,7 @@ rg "func Test" --type go -c | sort -t: -k2 -n
 go test -cover ./...  # coverage
 ```
 
-## Performance
+### Performance
 
 ```bash
 rg "append\(.*,.*\.\.\.\)" --type go  # slice append in loop

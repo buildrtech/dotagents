@@ -1,6 +1,17 @@
+---
+name: sorbet
+description: "Idiomatic Sorbet patterns, anti-patterns, and type safety detection. Use when working with Sorbet-typed Ruby code."
+metadata:
+  category: languages
+---
+
 # Sorbet
 
-## Types
+Apply these patterns when writing, reviewing, or refactoring Sorbet-typed Ruby. Load the `ruby` skill alongside this one.
+
+## Detection Patterns
+
+### Types
 
 ```bash
 # T.untyped hotspots
@@ -26,7 +37,7 @@ rg "T::Boolean" --type ruby  # boolean params in sigs
 rg "params\([^)]*: T::Boolean" --type ruby
 ```
 
-## Tests
+### Tests
 
 ```bash
 # Sorbet itself catches type errors

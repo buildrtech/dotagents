@@ -1,12 +1,15 @@
+---
+name: typescript
+description: "Idiomatic TypeScript patterns, type safety policies, and code quality detection. Use when writing, reviewing, or refactoring TypeScript code."
+metadata:
+  category: languages
+---
+
 # TypeScript
 
-## Scope: Audit + New Code Guidance
+Apply these patterns when writing, reviewing, or refactoring TypeScript code.
 
-Use this file in two modes:
-- **Audit mode:** detect existing issues with the search commands below.
-- **New code mode:** apply the policy rules below when writing or refactoring TypeScript.
-
-## Type Safety Policies (for refactors and new code)
+## Type Safety Policies
 
 ### Cast Avoidance Policy
 
@@ -53,14 +56,16 @@ Avoid:
 
 If generics are hard to express, improve API signatures before adding casts.
 
-## Dead Code
+## Detection Patterns
+
+### Dead Code
 
 ```bash
 rg "export (const|function|class|type|interface) \w+" --type ts -o
 rg "^//.*\n//.*\n//" --multiline --type ts  # commented blocks
 ```
 
-## Types
+### Types
 
 ```bash
 # any violations
@@ -78,14 +83,14 @@ rg "\w+\(true\)|\w+\(false\)" --type ts  # boolean literals at call sites
 rg ": boolean[,)]" --type ts  # boolean params in signatures
 ```
 
-## Tests
+### Tests
 
 ```bash
 rg "(xit|xdescribe|xtest|\.skip|\.todo)" --glob "*.test.ts" --glob "*.spec.ts"
 rg "(expect|assert)" --type ts -c | sort -t: -k2 -n
 ```
 
-## Performance
+### Performance
 
 ```bash
 rg "\.map\(.*\)\.map\(|\.filter\(.*\)\.map\(" --type ts  # single pass
