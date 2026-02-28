@@ -52,7 +52,6 @@ Fight entropy. Leave the codebase better than you found it.
 | GitHub | `gh` |
 | Linear | `linear-cli` — see `linear-cli --help` |
 | JSON/XML | `jq`, `xq` |
-| Beads | `br` — use for task tracking and issue workflow |
 
 ---
 

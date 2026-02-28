@@ -7,7 +7,7 @@ metadata:
 
 # Refactoring Audit
 
-Systematically analyze the codebase for refactoring opportunities. Output feeds directly into `/beads-plan`.
+Systematically analyze the codebase for refactoring opportunities. Output feeds directly into issue planning and creation workflows.
 
 ## Activation
 
@@ -176,7 +176,7 @@ Group findings by impact:
 ### Step 6: Handoff
 
 ```
-Ready for issue creation. Run `/beads-plan` with this audit to create trackable issues.
+Ready for issue creation. Use this audit to create trackable issues.
 ```
 
 ## Notes
