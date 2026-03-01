@@ -25,11 +25,15 @@ Load plan, review critically, execute all tasks, verify completion.
 
 ### Step 2: Execute All Tasks
 
-For each task:
-1. Follow each step exactly (plan has bite-sized steps)
-2. Run verifications as specified
-3. If blocked: Stop and ask for help (don't guess)
-4. Continue to next task
+Work through `- [ ]` items **one at a time, sequentially**:
+1. Pick the next unchecked `- [ ]` item
+2. Follow each step exactly (plan has bite-sized steps)
+3. Run verifications as specified
+4. Check it off in the plan file (`- [ ]` → `- [x]`) before moving on
+5. If blocked: Stop and ask for help (don't guess)
+6. Continue to next item
+
+**Hard gate:** Do NOT start the next `- [ ]` item until the current one is checked off. One item, verified, checked off, then next. No batching, no parallelizing, no "I'll check these off together at the end."
 
 ### Step 3: Complete
 
