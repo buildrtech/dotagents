@@ -248,6 +248,12 @@ playwright-cli tracing-stop
 playwright-cli close
 ```
 
+## Guidelines
+
+- Always run headed (the default) so the user can observe the browser. Never pass headless flags.
+- In Buildr local flows, hit `/launch` once per session and then reuse that account URL. Repeated `/launch` calls create unnecessary fresh accounts.
+- Do not claim screenshot or browser verification success unless you actually captured the artifact and observed the expected UI state.
+
 ## Specific tasks
 
 * **Request mocking** [references/request-mocking.md](references/request-mocking.md)

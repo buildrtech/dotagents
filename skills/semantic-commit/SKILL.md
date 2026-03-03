@@ -76,6 +76,7 @@ If any command returns matches, clean up before committing.
 - One logical change per commit.
 - Do not mix unrelated refactors, fixes, and docs in a single commit.
 - During long implementations, commit incrementally at stable checkpoints.
+- If using an issue tracker workflow, commit when each issue/task is closed before starting the next one.
 
 Examples of good commit splitting:
 - `feat(auth): add token refresh endpoint`

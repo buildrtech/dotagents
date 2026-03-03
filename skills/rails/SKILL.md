@@ -260,6 +260,10 @@ ProcessOrderJob.perform_later(order_id: order_id, notify: true)
 
 ### Migrations
 
+Always use `rails g migration` to create migration files — never hand-create them. Hand-created files risk wrong timestamps, missing version numbers, or incorrect class naming.
+
+Use `db:rollback` (not `db:reset`) when iterating on a migration in development. `db:reset` drops and recreates the entire database, losing all data and running all migrations from scratch.
+
 ```ruby
 # Always use explicit up/down (never `change`)
 class AddStatusToOrders < ActiveRecord::Migration[7.1]

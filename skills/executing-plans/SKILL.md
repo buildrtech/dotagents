@@ -30,8 +30,9 @@ Work through `- [ ]` items **one at a time, sequentially**:
 2. Follow each step exactly (plan has bite-sized steps)
 3. Run verifications as specified
 4. Check it off in the plan file (`- [ ]` → `- [x]`) before moving on
-5. If blocked: Stop and ask for help (don't guess)
-6. Continue to next item
+5. Commit at stable checkpoint when the item closes (do not accumulate big-bang changes)
+6. If blocked: Stop and ask for help (don't guess)
+7. Continue to next item
 
 **Hard gate:** Do NOT start the next `- [ ]` item until the current one is checked off. One item, verified, checked off, then next. No batching, no parallelizing, no "I'll check these off together at the end."
 

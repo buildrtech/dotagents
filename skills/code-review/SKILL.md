@@ -91,6 +91,11 @@ Analyze the code systematically across six domains. Examine each area and note A
 
 ## Working With Tools
 
+**Diff scope**: Always diff against the merge-base, not straight `main`. A straight diff includes changes that landed on main after the branch was created, producing false positives.
+```bash
+git diff $(git merge-base main HEAD)..HEAD
+```
+
 **Code analysis (always start here)**:
 - Use `Read`, `Grep`, `Glob` to understand the full context
 - Trace data flow through the code path

@@ -38,6 +38,12 @@ NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 
 Write code before the test? Delete it. Start over.
 
+Never combine RED and GREEN in one step for speed. The required order is:
+1. write failing test
+2. run and observe expected failure
+3. write minimal production code
+4. run and observe pass
+
 **No exceptions:**
 - Don't keep it as "reference"
 - Don't "adapt" it while writing tests

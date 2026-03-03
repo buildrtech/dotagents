@@ -93,6 +93,8 @@ git commit -m "feat: add specific feature"
 - Exact commands with expected output
 - Reference relevant skills with @ syntax
 - DRY, YAGNI, TDD, frequent commits
+- If the session uses a task tracker (beads/Linear/etc.), encode TDD as separate tasks (RED task blocks GREEN task) rather than prose-only steps
+- Include explicit commit checkpoints tied to task closure (do not defer all commits to the end)
 
 ## Execution Handoff
 

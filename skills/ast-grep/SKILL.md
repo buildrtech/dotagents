@@ -267,6 +267,22 @@ ast-grep scan --inline-rules "rule: {pattern: 'console.log(\$ARG)'}" .
 ast-grep scan --inline-rules 'rule: {pattern: "console.log($ARG)"}' .
 ```
 
+### Name Multi-Metavariables in Rewrites
+
+Anonymous `$$$` cannot be back-referenced in `--rewrite` — it emits the literal string `$$$`, corrupting code. Always use a **named** multi-metavariable like `$$$ARGS`.
+
+```bash
+# BROKEN: anonymous $$$ emits literally
+ast-grep run --pattern 'TodoOrDie($$$, by: "old")' \
+  --rewrite 'TodoOrDie($$$, by: "new")' --lang ruby --update-all .
+
+# CORRECT: named $$$ARGS substitutes properly
+ast-grep run --pattern 'TodoOrDie($$$ARGS, by: "old")' \
+  --rewrite 'TodoOrDie($$$ARGS, by: "new")' --lang ruby --update-all .
+```
+
+Same applies to single metavariables — `$` won't back-reference, but `$NAME` will.
+
 ## Common Use Cases
 
 ### Find Functions with Specific Content
@@ -312,6 +328,43 @@ rule:
         has:
           pattern: try { \$\$\$ } catch (\$E) { \$\$\$ }
           stopBy: end" /path/to/project
+```
+
+## Gotchas
+
+### `fix` applies to ALL matches
+
+A rule's `fix` field rewrites every match, not just the first. If you intend a targeted fix, scope the rule tightly with `inside`/`has` constraints or use `--interactive` to confirm each change.
+
+### `sgconfig.yml` auto-discovers from project root
+
+If an `sgconfig.yml` exists at the project root, `ast-grep scan` automatically loads rules from its configured `ruleDirs`. You don't need to pass `--rule` explicitly for project rules — just run `ast-grep scan <paths>`.
+
+### Native suppression comments
+
+ast-grep supports inline suppression: `// ast-grep-ignore` (or the language's comment syntax) on the line before a match suppresses that specific instance. No config file changes needed.
+
+### Prefer AST-shape matching over arity patterns
+
+Match the structural shape of code (node `kind` + `has`/`inside`) rather than trying to match by argument count or positional patterns. AST-shape rules are more robust to formatting and whitespace changes.
+
+### Split fixable and unfixable shapes into separate rules
+
+A single rule can't conditionally apply a `fix` to some matches but not others. If a pattern has both auto-fixable and unfixable shapes, write two rules: one with `fix` for the safe cases, one lint-only for the rest.
+
+### Order specific branches before broad in `any`
+
+ast-grep evaluates `any` branches in order and matches the first that succeeds. Put narrow/specific patterns before catch-all patterns, or the broad branch will swallow matches the specific one should have caught.
+
+### `files`/`ignores` for per-rule scoping
+
+Individual rules can specify which files they apply to directly in the YAML — no wrapper script needed:
+
+```yaml
+files:
+  - "app/**/*.rb"
+ignores:
+  - "test/**"
 ```
 
 ## Resources

@@ -30,6 +30,19 @@ View logs for failed steps only:
 gh run view <run-id> --repo owner/repo --log-failed
 ```
 
+## Creating PRs
+
+Before creating a PR, ensure planning/design docs are removed from the branch unless explicitly requested in the PR scope.
+
+**Never use `--body` with inline strings.** Backticks and shell metacharacters in the body get executed by the shell before `gh` sees them. Always write the body to a temp file and use `--body-file`:
+
+```bash
+cat > /tmp/pr-body.md << 'EOF'
+Description with `backticks` and $variables that won't be interpreted.
+EOF
+gh pr create --title "feat: add feature" --body-file /tmp/pr-body.md
+```
+
 ## API for Advanced Queries
 
 The `gh api` command is useful for accessing data not available through other subcommands.
