@@ -1,0 +1,13 @@
+# skill-overrides.toml - Frontmatter overrides applied during build
+#
+# Keys are skill names. Values are YAML frontmatter fields to add or replace.
+# Applied after frontmatter normalization. Useful for overriding fields on
+# external skills without forking upstream repos.
+#
+# Example:
+#
+# [some-external-skill]
+# disable-model-invocation = true
+#
+# [another-skill]
+# description = "Override the description during build"
