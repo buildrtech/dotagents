@@ -6,7 +6,7 @@
 
 **Conventions established by this plan:**
 - **Cross-references:** Plain backtick names in prose — `writing-plans` — no `@`, `Skill()`, or `superpowers:` prefixes
-- **Funnel routing:** Skills that produce actionable findings get a "## What Happens Next" section with consistent triage: quick fix → TDD directly, multi-step → `writing-plans`, needs design → `brainstorming`
+- **Funnel routing:** Skills that produce actionable findings get a "## What Happens Next" section. The user decides which findings to act on; the section routes by *size of the fix*: quick fix → TDD directly, clear scope multi-step → `writing-plans`, needs design → `brainstorming`
 - **Categories:** Every skill gets `metadata.category` — one of: `superpowers`, `languages`, `tools`, `workflow`, `qa`
 
 ```
@@ -383,11 +383,11 @@ metadata:
 ```markdown
 ## What Happens Next
 
-After understanding and verifying all feedback items:
+After understanding and verifying all feedback items, for changes you choose to make:
 
-- **Quick fixes** (typos, imports, small logic): apply directly with `test-driven-development`
-- **Multi-step changes** (refactoring, new logic across files): create a plan with `writing-plans`, execute with `executing-plans`
-- **Architectural feedback** (design disagreements, new patterns): discuss with your human partner, then `brainstorming` → `writing-plans` → `executing-plans`
+- **Quick fix** (obvious, < 5 min): apply directly with `test-driven-development` + `verification-before-completion`
+- **Needs design exploration**: use `brainstorming` to explore the approach
+- **Clear scope, multi-step**: create a plan with `writing-plans`, execute with `executing-plans`
 ```
 
 **Step 3:** Commit:
@@ -414,12 +414,11 @@ Replace the entire Step 5 (including the code block containing "Ready for issue 
 ```markdown
 ### Step 5: What Happens Next
 
-Present findings to the user, then act on them:
+Present findings to the user. For findings they choose to act on:
 
-- **Create tracked issues** from prioritized findings using the `issue-writing` skill
-- **Quick wins** (P2/P3, obvious fix, < 5 min): fix directly with `test-driven-development` + `verification-before-completion`
-- **Larger refactors** (P1/P2, multi-step): create a plan with `writing-plans`, then execute with `executing-plans`
-- **Architectural changes** (P0/P1, needs design discussion): start with `brainstorming` to explore the approach
+- **Quick fix** (obvious, < 5 min): apply directly with `test-driven-development` + `verification-before-completion`
+- **Needs design exploration**: use `brainstorming` to explore the approach
+- **Clear scope, multi-step**: create a plan with `writing-plans`, then execute with `executing-plans`
 ```
 
 **Step 2:** Commit:
@@ -462,11 +461,11 @@ With:
 ```markdown
 ## What Happens Next
 
-After finding the root cause and verifying the fix:
+After finding the root cause:
 
 - **Quick fix** (obvious, < 5 min): apply directly with `test-driven-development` + `verification-before-completion`
-- **Multi-step fix** (clear scope, touches several files): create a plan with `writing-plans`, then use `executing-plans`
-- **Needs design work** (architectural change, unclear trade-offs): start with `brainstorming` to explore the approach
+- **Needs design exploration**: use `brainstorming` to explore the approach
+- **Clear scope, multi-step**: create a plan with `writing-plans`, then use `executing-plans`
 ```
 
 **Step 3:** Verify:
@@ -495,9 +494,10 @@ git commit -m "fix(systematic-debugging): standardize refs, add pipeline funnel"
 
 After diagnosing a failure:
 
-- **Simple fix** (obvious cause, one file): fix directly with `test-driven-development` + `verification-before-completion`
-- **Complex failure** (unclear root cause): use `systematic-debugging` to investigate first
-- **Multi-step fix** (touches several files): create a plan with `writing-plans`, execute with `executing-plans`
+- **Quick fix** (obvious, < 5 min): fix directly with `test-driven-development` + `verification-before-completion`
+- **Unclear root cause**: use `systematic-debugging` to investigate first
+- **Needs design exploration**: use `brainstorming` to explore the approach
+- **Clear scope, multi-step**: create a plan with `writing-plans`, execute with `executing-plans`
 ```
 
 **Step 2:** Commit:
@@ -520,9 +520,10 @@ git commit -m "fix(fetch-ci-build): replace integration section with pipeline fu
 
 When test failures reveal bugs in the application:
 
-- **Simple bug** (obvious cause from the failure): fix directly with `test-driven-development` + `verification-before-completion`, then re-run the failed QA test
-- **Complex bug** (unclear root cause): use `systematic-debugging` to investigate, then fix through the implementation pipeline
-- **Multiple related failures** (systemic issue): create tracked issues with `issue-writing`, plan fixes with `writing-plans`
+- **Quick fix** (obvious cause, < 5 min): fix directly with `test-driven-development` + `verification-before-completion`, then re-run the failed QA test
+- **Unclear root cause**: use `systematic-debugging` to investigate first
+- **Needs design exploration**: use `brainstorming` to explore the approach
+- **Clear scope, multi-step**: create a plan with `writing-plans`, execute with `executing-plans`
 ```
 
 **Step 2:** Commit:
