@@ -14,7 +14,7 @@ Open pull requests consistently and safely.
 ## Preconditions
 
 Before creating a PR:
-1. Tests pass and linters are clean (fresh evidence, not memory).
+1. Run tests and linters now — fresh output, not memory. If they don't pass, fix first.
 2. Branch only contains in-scope changes.
 
 ## Workflow

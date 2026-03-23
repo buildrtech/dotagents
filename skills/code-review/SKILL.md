@@ -180,6 +180,11 @@ git diff $BASE_SHA HEAD
 
 3. Fix Critical and Important issues before proceeding. Note Minor issues for later.
 
+**Cadence during plan execution:**
+- Review after every 3 tasks or at natural checkpoints
+- Review before merge, always
+- Review when stuck — a self-review often surfaces the issue
+
 ## Constraints
 
 **Never do**:
