@@ -33,7 +33,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 ```markdown
 # [Feature Name] Implementation Plan
 
-> REQUIRED SUB-SKILL: Use superpowers:executing-plans skill to implement this plan task-by-task.
+> REQUIRED: Use the `executing-plans` skill to implement this plan task-by-task.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -91,7 +91,7 @@ git commit -m "feat: add specific feature"
 - Exact file paths always
 - Complete code in plan (not "add validation")
 - Exact commands with expected output
-- Reference relevant skills with @ syntax
+- Reference relevant skills by name in backticks
 - DRY, YAGNI, TDD, frequent commits
 - If the session uses a task tracker (beads/Linear/etc.), encode TDD as separate tasks (RED task blocks GREEN task) rather than prose-only steps
 - Include explicit commit checkpoints tied to task closure (do not defer all commits to the end)
@@ -103,7 +103,7 @@ After saving the plan:
 **"Plan saved to `docs/plans/<filename>.md`. Ready to execute?"**
 
 **If yes:**
-- **REQUIRED SUB-SKILL:** Use superpowers:executing-plans skill to implement the plan
+- **REQUIRED:** Use the `executing-plans` skill to implement the plan
 
 **If no / new session preferred:**
 - User can start fresh session with: "Execute the plan in docs/plans/<filename>.md"
