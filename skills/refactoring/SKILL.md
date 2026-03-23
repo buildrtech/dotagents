@@ -171,11 +171,13 @@ Group findings by impact:
 - [ ] Fix N+1 in `OrdersController#index`
 ```
 
-### Step 5: Handoff
+### Step 5: What Happens Next
 
-```
-Ready for issue creation. Use this audit to create trackable issues.
-```
+Present findings to the user. For findings they choose to act on:
+
+- **Quick fix** (obvious, < 5 min): apply directly with `test-driven-development` + `verification-before-completion`
+- **Needs design exploration**: use `brainstorming` to explore the approach
+- **Clear scope, multi-step**: create a plan with `writing-plans`, then execute with `executing-plans`
 
 ## Notes
 
