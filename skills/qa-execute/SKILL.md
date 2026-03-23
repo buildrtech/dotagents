@@ -171,6 +171,15 @@ playwright-cli close
 
 Commit updated plan and results doc. Report summary to user.
 
+## What Happens Next
+
+When test failures reveal bugs in the application:
+
+- **Quick fix** (obvious cause, < 5 min): fix directly with `test-driven-development` + `verification-before-completion`, then re-run the failed QA test
+- **Unclear root cause**: use `systematic-debugging` to investigate first
+- **Needs design exploration**: use `brainstorming` to explore the approach
+- **Clear scope, multi-step**: create a plan with `writing-plans`, execute with `executing-plans`
+
 ## When to Stop and Ask for Help
 
 Stop executing when:
