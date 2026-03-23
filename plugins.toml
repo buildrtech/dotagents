@@ -12,3 +12,8 @@ url = "https://github.com/rjs/shaping-skills"
 ref = "main"
 skills_path = ["*"]
 skills = ["*"]
+
+["obra/the-elements-of-style"]
+url = "https://github.com/obra/the-elements-of-style"
+ref = "main"
+skills = ["writing-clearly-and-concisely"]
