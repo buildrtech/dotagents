@@ -31,7 +31,9 @@ Work through `- [ ]` items **one at a time, sequentially**:
 3. Run verifications as specified
 4. Check it off in the plan file (`- [ ]` → `- [x]`) before moving on
 5. Commit at stable checkpoint when the item closes (do not accumulate big-bang changes)
+   - Use the `semantic-commit` skill for commit messages
 6. If blocked: Stop and ask for help (don't guess)
+   - If blocked by a bug: use the `systematic-debugging` skill, then return to this task
 7. Continue to next item
 
 **Hard gate:** Do NOT start the next `- [ ]` item until the current one is checked off. One item, verified, checked off, then next. No batching, no parallelizing, no "I'll check these off together at the end."
@@ -39,7 +41,8 @@ Work through `- [ ]` items **one at a time, sequentially**:
 ### Step 3: Complete
 
 After all tasks:
-- Run final verifications as specified in the plan
+- Use the `verification-before-completion` skill for final checks
+- If the plan included documentation tasks, use the `document-writing` skill (with `writing-clearly-and-concisely` for prose quality)
 - Summarize completed work and verification output
 
 ## When to Stop and Ask for Help
