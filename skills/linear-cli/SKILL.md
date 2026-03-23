@@ -2,6 +2,8 @@
 name: linear-cli
 description: Manage Linear issues, projects, teams, and cycles using the linear-cli tool. Use when the user mentions Linear, linear-cli, or references Linear issue identifiers like ENG-123.
 allowed-tools: Bash(linear-cli:*)
+metadata:
+  category: tools
 ---
 
 # Linear CLI

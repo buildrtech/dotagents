@@ -2,6 +2,8 @@
 name: mermaid
 description: "Create and validate Mermaid diagrams with the official Mermaid CLI. Use when creating flowcharts, sequence diagrams, or other Mermaid charts."
 origin: https://github.com/mitsuhiko/agent-stuff/blob/main/skills/mermaid/SKILL.md
+metadata:
+  category: tools
 ---
 
 # Mermaid Skill

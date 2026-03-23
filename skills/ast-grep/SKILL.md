@@ -1,6 +1,8 @@
 ---
 name: ast-grep
 description: "Structural code search AND rewriting using AST patterns. Use when: (1) finding code by structure rather than text, (2) bulk code transformations across many files — adding/removing/renaming fields in struct literals, function arguments, imports, etc. Prefer over sed/perl/regex for any multi-file code modification where the change depends on surrounding structure (e.g., 'remove field X from struct Foo but not struct Bar')."
+metadata:
+  category: tools
 ---
 
 # ast-grep Code Search & Rewrite

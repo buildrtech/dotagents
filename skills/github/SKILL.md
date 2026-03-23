@@ -2,6 +2,8 @@
 name: github
 description: "Interact with GitHub using the `gh` CLI. Use `gh issue`, `gh pr`, `gh run`, and `gh api` for issues, PRs, CI runs, and advanced queries."
 origin: https://github.com/mitsuhiko/agent-stuff/blob/main/skills/github/SKILL.md
+metadata:
+  category: tools
 ---
 
 # GitHub Skill

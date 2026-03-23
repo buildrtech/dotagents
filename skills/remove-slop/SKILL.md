@@ -2,6 +2,8 @@
 name: remove-slop
 description: Remove AI-generated code slop from the current branch - extra comments, defensive checks, type casts, and style inconsistencies.
 allowed-tools: Bash(*), Read(**), Edit(*), Glob(*), Grep(*)
+metadata:
+  category: workflow
 ---
 
 # Remove AI Code Slop

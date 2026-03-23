@@ -1,6 +1,8 @@
 ---
 name: semantic-commit
 description: Create semantic git commits following Conventional Commits specification. Use when committing changes, making commits, or when asked to commit.
+metadata:
+  category: workflow
 ---
 
 # Semantic Commit

@@ -1,6 +1,8 @@
 ---
 name: react
 description: Use when working on React components and React-facing TypeScript patterns (events, wrapper APIs, component contracts, Formik, TanStack).
+metadata:
+  category: languages
 ---
 
 # React Conventions

@@ -3,6 +3,8 @@ name: sentry-issue
 description: "Fetch and analyze Sentry issues, events, transactions, and logs. Use when given a Sentry issue URL, investigating errors by time window, searching logs, or listing unresolved issues."
 origin: https://github.com/mitsuhiko/agent-stuff/blob/main/skills/sentry/SKILL.md
 disable-model-invocation: true
+metadata:
+  category: tools
 ---
 
 # Sentry Issue Investigation

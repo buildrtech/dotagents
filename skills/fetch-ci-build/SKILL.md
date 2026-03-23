@@ -2,6 +2,8 @@
 name: fetch-ci-build
 description: Fetch CI build results and diagnose failures. Auto-detects provider from project files or URLs. Supports GitHub Actions, Buildkite, and CircleCI.
 disable-model-invocation: true
+metadata:
+  category: tools
 ---
 
 # Fetch CI Build
