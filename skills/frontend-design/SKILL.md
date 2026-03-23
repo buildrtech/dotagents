@@ -1,6 +1,8 @@
 ---
 name: frontend-design
 description: Craft premium B2B interfaces - information-dense, predictable, and professional. Invoke before building any user-facing component.
+metadata:
+  category: languages
 ---
 
 # Frontend Design
@@ -9,7 +11,7 @@ Premium B2B interfaces through refinement, not decoration. Power users live in y
 
 Apply the mindset of a designer-turned-developer: create professional, cohesive interfaces that feel intentional and refined, even without mockups or design specs.
 
-**IMPORTANT**: Invoke `@react` before writing any TypeScript/React code.
+**IMPORTANT**: Load the `react` skill before writing any TypeScript/React code.
 
 ## Activation
 
@@ -21,7 +23,7 @@ This skill activates when:
 
 ## Dependencies
 
-**Invokes:** `@react` before writing any TypeScript/React code
+**Invokes:** `react` before writing any TypeScript/React code
 
 ---
 
