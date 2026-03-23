@@ -9,7 +9,7 @@ allowed-tools: Bash(*), Read(**), Edit(*), Glob(*), Grep(*)
 ## Activation
 
 This skill activates when:
-- Before committing code (called by the `clean-commits` skill)
+- Before committing code (called by the `semantic-commit` skill)
 - User requests code cleanup
 - Reviewing AI-generated changes
 - User says "remove slop" or "clean up"
@@ -17,9 +17,7 @@ This skill activates when:
 
 ## Dependencies
 
-**Invokes:** None
-
-**Invoked by:** `Skill(skill: "clean-commits")`, `Skill(skill: "verification")`
+**Invoked by:** `semantic-commit`, `verification-before-completion`
 
 Check the diff against main, and remove all AI generated slop introduced in this branch.
 
