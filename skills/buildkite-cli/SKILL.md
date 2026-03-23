@@ -54,7 +54,9 @@ bk user invite teammate@example.com
 ```bash
 bk init
 bk pipeline list
+bk pipeline list --name my-app --output json
 bk pipeline view my-pipeline
+bk pipeline view my-pipeline --web    # open in browser
 bk pipeline create "My Pipeline" --description "CI pipeline" --repository "git@github.com:org/repo.git"
 bk pipeline validate --file pipeline.yml
 bk pipeline convert --file .github/workflows/ci.yml
@@ -65,8 +67,14 @@ bk pipeline copy my-pipeline --target my-pipeline-v2
 
 ```bash
 bk build list --pipeline my-pipeline
+bk build list --pipeline my-pipeline --state failed --branch main --since 24h
+bk build list --pipeline my-pipeline --duration ">20m" --limit 500
+bk build list --pipeline my-pipeline --creator alice@company.com
 bk build view 123 --pipeline my-pipeline
+bk build view --pipeline my-pipeline                      # most recent build for current branch
+bk build view --pipeline my-pipeline --branch main --mine # most recent of my builds on main
 bk build create --pipeline my-pipeline --branch main --commit HEAD
+bk build create --pipeline my-pipeline --env "FOO=BAR" --metadata "key=value"
 bk build watch 123 --pipeline my-pipeline
 bk build cancel 123 --pipeline my-pipeline
 bk build rebuild 123 --pipeline my-pipeline
@@ -77,7 +85,10 @@ bk build download 123 --pipeline my-pipeline
 
 ```bash
 bk job list --pipeline my-pipeline --state failed --since 2h
-bk job log <job-id> --pipeline my-pipeline --build 123
+bk job list --pipeline my-pipeline --duration ">10m" --order-by duration
+bk job list --pipeline my-pipeline --queue test-queue --state running
+bk job log <job-id> --pipeline my-pipeline --build-number 123
+bk job log <job-id> --pipeline my-pipeline --build-number 123 --no-timestamps
 bk job retry <job-id>
 bk job unblock <job-id>
 bk job cancel <job-id>
@@ -95,10 +106,12 @@ bk artifacts download <artifact-id>
 
 ```bash
 bk agent list
+bk agent list --state running --tags queue=default --output json
 bk agent view <agent-id>
 bk agent pause <agent-id> --note "maintenance" --timeout-in-minutes 30
 bk agent resume <agent-id>
 bk agent stop <agent-id>
+bk agent stop <agent-id> --force   # terminates in-progress jobs
 
 bk cluster list
 bk cluster view <cluster-id>
@@ -129,7 +142,7 @@ bk build watch <build-number> --pipeline my-pipeline
 ```bash
 bk build list --pipeline my-pipeline --state failed --limit 1
 bk job list --pipeline my-pipeline --state failed --limit 20
-bk job log <job-id> --pipeline my-pipeline --build <build-number>
+bk job log <job-id> --pipeline my-pipeline --build-number <build-number>
 bk artifacts list <build-number> --pipeline my-pipeline --job <job-id>
 ```
 

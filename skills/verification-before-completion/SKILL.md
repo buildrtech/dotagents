@@ -82,6 +82,10 @@ For manual checks, state exactly what you exercised (pages, inputs, expected out
 Never skip verification because it feels complicated or expensive; reduce scope, but still run real checks.
 If the human requested headed browser verification, run it headed and report concrete evidence (steps + observed result).
 
+### Non-Deterministic Verification
+
+If verification results are non-deterministic (flaky tests, timing-dependent assertions), fix the harness before trusting results. A passing test that sometimes fails is not evidence of correctness. See `make-verification-deterministic` principle.
+
 ### Clean State Checklist
 
 Before claiming completion or committing:

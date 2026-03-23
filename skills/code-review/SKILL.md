@@ -15,6 +15,7 @@ Surface all findings with evidence. The reader decides what to act on.
 
 - User invokes `/code-review`
 - User asks to review code, PR, or changes
+- Self-review before merge or PR creation (see "Self-Review" below)
 
 ## Review Philosophy
 
@@ -93,7 +94,7 @@ Analyze the code systematically across six domains. Examine each area and note A
 
 **Diff scope**: Always diff against the merge-base, not straight `main`. A straight diff includes changes that landed on main after the branch was created, producing false positives.
 ```bash
-git diff $(git merge-base main HEAD)..HEAD
+git diff $(git merge-base origin/main HEAD)..HEAD
 ```
 
 **Code analysis (always start here)**:
@@ -156,6 +157,28 @@ For each issue:
 **Trade-off Analysis** (when significant choices exist)
 - Why current approach was likely chosen
 - Alternative approaches with pros/cons
+
+## Self-Review
+
+Use this workflow to review your own changes before merge or PR creation.
+
+**When:**
+- After completing a major feature
+- Before merge to main
+- When stuck (fresh perspective)
+- Before refactoring (baseline check)
+
+**How:**
+
+1. Get the diff:
+```bash
+BASE_SHA=$(git merge-base HEAD origin/main)
+git diff $BASE_SHA HEAD
+```
+
+2. Apply the six-domain review above to your own changes, flagging issues by severity (P0–P4).
+
+3. Fix Critical and Important issues before proceeding. Note Minor issues for later.
 
 ## Constraints
 
@@ -277,6 +300,12 @@ Surface everything. The reader decides what matters for their context.
 
 Make it actionable: clear findings with evidence that can be acted on.
 
-## Composing With Other Skills
+## What Happens Next
 
-For refactoring-focused reviews, also apply `Skill(refactoring)`.
+Present findings to the user. For findings they choose to act on:
+
+- **Quick fix** (obvious, < 5 min): apply directly with `test-driven-development` + `verification-before-completion`
+- **Needs design exploration**: use `brainstorming` to explore the approach
+- **Clear scope, multi-step**: create a plan with `writing-plans`, execute with `executing-plans`
+
+For refactoring-focused reviews, also apply the `refactoring` skill.

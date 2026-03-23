@@ -33,6 +33,8 @@ git diff --cached | rg "^\+" | rg "^\+\s*(//|#)\s*(def |function |class |const |
 
 If any command returns matches, clean up before committing.
 
+> These `rg` checks are candidates for a git pre-commit hook. See `pre-commit-workflow` memory note for why rubocop is deferred; these grep checks are lightweight enough to encode structurally.
+
 ## Commit Format
 
 ```

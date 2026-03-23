@@ -11,6 +11,8 @@ Fetch and debug Sentry exceptions with a repeatable CLI workflow. Supports URL-b
 
 **Auth:** Uses token from `~/.sentryclirc`. Run `sentry-cli login` if missing.
 
+**Execution path:** Commands are relative to this skill's directory. Run from `{baseDir}` or prefix commands with `{baseDir}/`.
+
 ## Quick Reference
 
 | Task | Command |

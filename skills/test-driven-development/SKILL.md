@@ -156,6 +156,8 @@ Confirm:
 
 **Test errors?** Fix error, re-run until it fails correctly.
 
+**Cannot run tests in the environment (DB down, tooling unavailable, etc.)?** Stop and wait for the human partner. Do not continue implementation while claiming TDD.
+
 ### GREEN - Minimal Code
 
 Write simplest code to pass the test.

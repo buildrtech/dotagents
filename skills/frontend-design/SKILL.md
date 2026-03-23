@@ -97,6 +97,15 @@ Animations only for feedback.
 - 150-200ms durations maximum
 - No gratuitous motion - users are here to work
 
+### Async Search & Filtering
+
+Stale-while-revalidate: keep showing previous results while fetching new ones.
+
+- Initial load (no data yet): show skeleton/spinner
+- Subsequent queries: keep old results visible, show subtle inline loading indicator (e.g. spinner in search input)
+- Never flash a full loading state between search result sets — it feels jumpy
+- Swap results only when new data arrives
+
 ### Color
 
 Restrained and functional.

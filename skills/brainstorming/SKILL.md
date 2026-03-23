@@ -26,6 +26,7 @@ Start by understanding the current project context, then ask questions one at a 
 - Propose 2-3 different approaches with trade-offs
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why
+- For novel architecture decisions, consider consulting a second opinion (see `consult-before-building` principle)
 
 **Presenting the design:**
 - Once you believe you understand what you're building, present the design

@@ -1,22 +1,22 @@
 ---
 name: ast-grep
-description: Write ast-grep rules for structural code search using AST patterns. Use when the user needs to find code by structure rather than text — specific language constructs, pattern matching across files, or queries that grep can't express.
+description: "Structural code search AND rewriting using AST patterns. Use when: (1) finding code by structure rather than text, (2) bulk code transformations across many files — adding/removing/renaming fields in struct literals, function arguments, imports, etc. Prefer over sed/perl/regex for any multi-file code modification where the change depends on surrounding structure (e.g., 'remove field X from struct Foo but not struct Bar')."
 ---
 
-# ast-grep Code Search
+# ast-grep Code Search & Rewrite
 
 ## Overview
 
-This skill helps translate natural language queries into ast-grep rules for structural code search. ast-grep uses Abstract Syntax Tree (AST) patterns to match code based on its structure rather than just text, enabling powerful and precise code search across large codebases.
+This skill helps write ast-grep rules for structural code search **and bulk code transformation**. ast-grep uses Abstract Syntax Tree (AST) patterns to match code based on its structure rather than just text, enabling powerful and precise code search and rewriting across large codebases.
 
 ## When to Use This Skill
 
-Use this skill when users:
-- Need to search for code patterns using structural matching (e.g., "find all async functions that don't have error handling")
-- Want to locate specific language constructs (e.g., "find all function calls with specific parameters")
-- Request searches that require understanding code structure rather than just text
-- Ask to search for code with particular AST characteristics
-- Need to perform complex code queries that traditional text search cannot handle
+Use this skill when:
+- **Bulk code transformation** — adding, removing, or modifying fields/arguments/imports across many files where the change depends on structural context (e.g., "add `parent: None` to all `Issue { ... }` literals but not `User { ... }` literals")
+- **You're about to reach for `sed`, `perl -pe`, or a Python script for multi-file code changes** — ast-grep is almost always safer because it distinguishes struct types, function names, and nesting
+- Searching for code patterns using structural matching (e.g., "find all async functions that don't have error handling")
+- Locating specific language constructs (e.g., "find all function calls with specific parameters")
+- Performing complex code queries that traditional text search cannot handle
 
 ## General Workflow
 
@@ -115,6 +115,49 @@ language: javascript
 rule:
   pattern: \$PATTERN" /path/to/project
 ```
+
+## Rewriting Workflow (Bulk Code Transformation)
+
+When the task is **modifying** code across many files (not just finding it), use `--rewrite` + `--update-all`:
+
+### Step 1: Write the pattern and rewrite
+
+Use named multi-metavariables (`$$$BEFORE`, `$$$AFTER`) to capture surrounding context:
+
+```bash
+# Remove a field from a specific struct type (leaves other structs untouched)
+ast-grep run \
+  --pattern 'User { $$$BEFORE, state_type: $VAL, $$$AFTER }' \
+  --rewrite 'User { $$$BEFORE, $$$AFTER }' \
+  --lang rust /path/to/project
+```
+
+```bash
+# Add a field before an existing field
+ast-grep run \
+  --pattern 'Issue { $$$BEFORE, comments: $VAL }' \
+  --rewrite 'Issue { $$$BEFORE, parent: None, children: None, comments: $VAL }' \
+  --lang rust /path/to/project
+```
+
+### Step 2: Dry-run first (no `--update-all`)
+
+Without `--update-all`, ast-grep shows a diff preview. Verify the changes look correct.
+
+### Step 3: Apply and format
+
+```bash
+ast-grep run --pattern '...' --rewrite '...' --lang rust --update-all /path/to/project
+# ast-grep rewriting may mangle formatting — always run the language formatter after
+cargo fmt --all    # Rust
+prettier --write . # JS/TS
+```
+
+**Why ast-grep over sed/perl/regex for bulk code changes:**
+- Struct-type-aware: `User { ... }` won't match `IssueState { ... }` even if they share field names
+- Handles multi-line patterns naturally (no `perl -0pe` hacks)
+- Preserves unmatched code exactly (no accidental edits to nearby lines)
+- `--update-all` is idempotent — safe to re-run
 
 ## ast-grep CLI Commands
 
