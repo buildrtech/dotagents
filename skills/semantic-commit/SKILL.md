@@ -11,7 +11,7 @@ Create git commits following the [Conventional Commits](https://www.conventional
 
 Before message formatting, ensure the staged code is clean.
 
-1. Run `@remove-slop` as a cleanup pass.
+1. Run the `remove-slop` skill as a cleanup pass.
 2. Verify there is no commit noise:
    - debug statements
    - TODO/FIXME/HACK comments
