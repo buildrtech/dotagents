@@ -1,6 +1,8 @@
 ---
 name: document-writing
 description: Write README files, API docs, architecture docs, and user guides. Verification-driven - all code examples must be tested.
+metadata:
+  category: workflow
 ---
 
 This skill guides the creation of accurate, comprehensive, and genuinely useful documentation. Documentation must obsess over clarity, structure, and completeness while ensuring technical correctness.
@@ -95,6 +97,8 @@ Invoke this skill when:
 - Direct and confident
 - Active voice
 - No filler words or hedging
+
+For prose quality, apply the `writing-clearly-and-concisely` skill — active voice, positive form, concrete language, omit needless words.
 
 ### Formatting
 - Headers for scanability
