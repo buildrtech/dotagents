@@ -13,6 +13,13 @@ Help turn ideas into fully formed designs and specs through natural collaborativ
 
 Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design in small sections (200-300 words), checking after each section whether it looks right so far.
 
+## Upstream
+
+This skill is the design stage. Work may arrive here from:
+- **Shaping** — if using Shape Up (`shaping`, `breadboarding`, `kickoff-doc` skills), brainstorming refines the shaped pitch into an implementable design
+- **Findings** — complex findings from `code-review`, `refactoring`, or `systematic-debugging` that need design exploration before planning
+- **New ideas** — user brings an idea directly
+
 ## The Process
 
 **Understanding the idea:**
@@ -39,12 +46,12 @@ Start by understanding the current project context, then ask questions one at a 
 
 **Documentation:**
 - Write the validated design to `docs/design/YYYY-MM-DD-<topic>.md`
-- Use elements-of-style:writing-clearly-and-concisely skill if available
+- Use the `writing-clearly-and-concisely` skill for clearer prose
 - Commit the design document to git
 
 **Implementation (if continuing):**
 - Ask: "Ready to create an implementation plan?"
-- Use superpowers:writing-plans skill to create detailed implementation plan
+- Use the `writing-plans` skill to create a detailed implementation plan
 
 ## Key Principles
 
