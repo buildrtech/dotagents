@@ -2,7 +2,7 @@
 name: creating-pr
 description: Create high-quality GitHub pull requests with preflight checks, safe body-file usage, and post-create validation. Use when opening a PR.
 metadata:
-  category: quality
+  category: workflow
 ---
 
 # Creating PR
@@ -14,9 +14,8 @@ Open pull requests consistently and safely.
 ## Preconditions
 
 Before creating a PR:
-1. Run `@verification-before-completion` and confirm fresh passing evidence.
-2. Run `@requesting-code-review` (self-review) and fix Critical/Important findings.
-3. Ensure branch only contains in-scope changes.
+1. Tests pass and linters are clean (fresh evidence, not memory).
+2. Branch only contains in-scope changes.
 
 ## Workflow
 
@@ -119,6 +118,7 @@ Report back with:
 - scope summary
 - verification commands executed
 - open risks / follow-ups
+- documentation updated (if behavior changed)
 
 ## Common mistakes
 
