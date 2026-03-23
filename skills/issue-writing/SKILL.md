@@ -1,6 +1,8 @@
 ---
 name: issue-writing
 description: Write high-quality feature/task issues using user-story language, INVEST, decomposition, and testable acceptance criteria.
+metadata:
+  category: workflow
 ---
 
 # Issue Writing
@@ -73,3 +75,11 @@ Decompose when work is too large, crosses systems, or needs progress checkpoints
 - [ ] Given I have a tracking number, when I open tracking page, then I see latest status
 
 Criteria should be specific, testable, and tied to user value.
+
+## Implementation Pipeline
+
+After issues are created and prioritized:
+
+- Use the `writing-plans` skill to create an implementation plan from the issue
+- Use the `executing-plans` skill to implement the plan task-by-task
+- For issues that need design exploration first, use the `brainstorming` skill
