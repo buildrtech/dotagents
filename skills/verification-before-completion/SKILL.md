@@ -74,7 +74,7 @@ Linters passing does **not** prove compilation/runtime correctness. Type checks 
 Use this decision split:
 
 - **UI changes (web/mobile/desktop):** run automated checks **and** verify manually in browser/app flows affected.
-  - Prefer the **Playwright CLI skill** for browser validation.
+  - Prefer the `playwright-cli` skill for browser validation.
   - Do **not** rely on MCP server-based browsing as your default verification path.
 - **CLI/library/backend-only changes with no UI impact:** automated tests may be sufficient if they fully cover changed behavior.
 
@@ -96,7 +96,7 @@ Before claiming completion or committing:
 - [ ] Remove half-implemented branches and placeholder paths
 - [ ] Ensure no skipped/disabled tests were introduced to force green
 
-Optional hygiene pass: run `@remove-slop` before final completion claims.
+Optional hygiene pass: run the `remove-slop` skill before final completion claims.
 
 ### Verification-Proof Claim Examples
 
