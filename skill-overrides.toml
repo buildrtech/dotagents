@@ -11,3 +11,9 @@ disable-model-invocation = true
 
 [breadboard-reflection]
 disable-model-invocation = true
+
+[framing-doc]
+disable-model-invocation = true
+
+[kickoff-doc]
+disable-model-invocation = true

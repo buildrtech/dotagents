@@ -17,63 +17,82 @@ make install
 
 ## Skill Catalog
 
-### Methodology
+### Superpowers — core process skills
 
 | Skill | Description |
 |-------|-------------|
-| `brainstorming` | Explore intent and options before implementation |
-| `writing-plans` | Create execution-ready implementation plans |
-| `executing-plans` | Execute plan tasks continuously and report blockers |
-| `dispatching-parallel-agents` | Split independent work across parallel agents |
-
-### Quality
-
-| Skill | Description |
-|-------|-------------|
-| `test-driven-development` | Test-first development with strict red-green-refactor |
-| `systematic-debugging` | Root-cause debugging workflow before fixes |
-| `verification-before-completion` | Fresh verification evidence before completion claims |
-| `receiving-code-review` | Evaluate review feedback rigorously before changes |
-| `requesting-code-review` | Request structured review before merge/progression |
-| `code-review` | Six-domain review framework with P0–P4 severities |
-| `semantic-commit` | Conventional Commit workflow with hygiene gates |
-| `remove-slop` | Remove debug noise, TODOs, and incomplete artifacts |
+| `brainstorming` | Explore intent and design before implementation |
+| `writing-plans` | Create bite-sized implementation plans |
+| `executing-plans` | Execute plan tasks one-by-one, stop on blockers |
+| `test-driven-development` | Red-green-refactor, no exceptions |
+| `systematic-debugging` | Root-cause investigation before fixes |
+| `verification-before-completion` | Fresh evidence before completion claims |
+| `code-review` | Six-domain review (P0–P4) + self-review workflow |
+| `receiving-code-review` | Evaluate feedback rigorously before changes |
 | `refactoring` | Multi-language refactoring audit and prioritization |
+| `branch-quiz` | Quiz user on branch changes to verify comprehension |
 
-### Frontend / Docs / Prompting
-
-| Skill | Description |
-|-------|-------------|
-| `react` | React-specific component/event/wrapper conventions |
-| `frontend-design` | Information-dense, professional B2B UI guidance |
-| `document-writing` | Verification-first technical documentation writing |
-| `prompt-writing` | Anthropic-oriented prompt and skill authoring patterns |
-
-### Code Search
+### Workflow — supporting process steps
 
 | Skill | Description |
 |-------|-------------|
-| `ast-grep` | Structural code search and ast-grep rule authoring for AST-based queries |
+| `semantic-commit` | Conventional Commits with pre-commit hygiene |
+| `remove-slop` | Strip AI-generated code noise |
+| `creating-pr` | Open PRs with preflight checks and safe body-file usage |
+| `document-writing` | Verification-driven technical documentation |
+| `issue-writing` | User stories with INVEST and testable acceptance criteria |
 
-### Planning / Issue Management
-
-| Skill | Description |
-|-------|-------------|
-| `issue-writing` | Universal user-story and acceptance-criteria issue design |
-
-### CLI Tools
+### Languages — loaded contextually during code work
 
 | Skill | Description |
 |-------|-------------|
-| `linear-cli` | Manage Linear issues, projects, teams, and cycles via `linear-cli` |
-| `buildkite-cli` | Manage Buildkite pipelines, builds, jobs, and agents via `bk` |
-| `notify` | Send desktop/system notifications from terminal workflows |
+| `typescript` | Type safety policies, idiomatic patterns |
+| `react` | Component contracts, events, hooks, TanStack/Formik |
+| `frontend-design` | Information-dense B2B interfaces |
+| `ruby` | Idiomatic Ruby patterns and detection |
+| `rails` | Rails-specific patterns, eager loading, migrations |
+| `sorbet` | Sorbet type safety, T::Struct, sealed modules |
+| `python` | Modern Python (3.12+), dataclasses, async |
+| `go` | Error handling, interfaces, concurrency |
+| `rust` | Ownership, error handling, iterators |
+| `sql` | Query patterns, index guidelines |
+| `postgres` | PostgreSQL indexes, safe DDL, JSONB |
 
-### CI / Build
+### Tools — external CLI wrappers
 
 | Skill | Description |
 |-------|-------------|
-| `fetch-ci-build` | Fetch CI build results and diagnose failures across CI providers |
+| `github` | GitHub via `gh` CLI — PRs, issues, runs, API |
+| `linear-cli` | Linear issues, projects, cycles via `linear-cli` |
+| `brave-search` | Web search and content extraction via Brave API |
+| `summarize` | Convert URLs/PDFs/docs to Markdown via `markitdown` |
+| `ast-grep` | Structural code search and bulk AST rewriting |
+| `mermaid` | Validate and render Mermaid diagrams |
+| `playwright-cli` | Browser automation for testing and data extraction |
+| `tmux` | Remote-control tmux sessions for interactive CLIs |
+| `notify` | Desktop notifications via OSC 777 |
+| `buildkite-cli` | Buildkite pipelines, builds, agents via `bk` |
+| `fetch-ci-build` | Diagnose CI failures across GitHub Actions, Buildkite, CircleCI |
+| `sentry-issue` | Investigate Sentry errors, events, and logs |
+
+### QA — manual-only chain
+
+| Skill | Description |
+|-------|-------------|
+| `qa-brainstorm` | Explore app and build QA strategy |
+| `qa-plan` | Generate executable test cases from strategy |
+| `qa-execute` | Run test plan via playwright-cli |
+
+### External — from plugins.toml
+
+| Skill | Source | Description |
+|-------|--------|-------------|
+| `shaping` | rjs/shaping-skills | Shape Up methodology |
+| `breadboarding` | rjs/shaping-skills | Workflow → affordance tables |
+| `breadboard-reflection` | rjs/shaping-skills | Reflect on breadboard vs implementation |
+| `framing-doc` | rjs/shaping-skills | Framing doc from transcripts |
+| `kickoff-doc` | rjs/shaping-skills | Kickoff doc from transcripts |
+| `writing-clearly-and-concisely` | obra/the-elements-of-style | Strunk's rules for clear prose |
 
 ## Beads Extension (runtime)
 
