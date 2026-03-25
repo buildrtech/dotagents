@@ -24,6 +24,7 @@ help:
 	@echo "Install paths:"
 	@echo "  Claude Code:           ~/.claude/skills/"
 	@echo "  OpenCode/Pi/Codex:     ~/.agents/skills/"
+	@echo "  Pi Subagents:          ~/.pi/agent/agents/"
 
 check-python:
 	@$(PYTHON) -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)" 2>/dev/null || \
