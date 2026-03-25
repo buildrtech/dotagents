@@ -18,7 +18,7 @@ All configuration lives in `install.toml`:
 
 ```toml
 # Which agent harnesses to install to
-targets = ["pi"]              # Options: "pi", "claude", "codex", "amp"
+targets = ["pi"]              # Options: "pi", "claude", "opencode", "codex"
 
 # Skills to skip
 exclude = ["branch-quiz"]
@@ -37,8 +37,8 @@ disable-model-invocation = true
 |--------|--------|------------|
 | Pi | `~/.pi/agent/skills/` | `~/.pi/agent/extensions/` |
 | Claude Code | `~/.claude/skills/` | — |
-| Codex | `~/.codex/skills/` | — |
-| Amp | `~/.amp/skills/` | — |
+| OpenCode | `~/.agents/skills/` | — |
+| Codex | `~/.agents/skills/` | — |
 
 ## Commands
 

@@ -33,8 +33,8 @@ dotagents/
 |--------|--------|------------|
 | Pi | `~/.pi/agent/skills/` | `~/.pi/agent/extensions/` |
 | Claude Code | `~/.claude/skills/` | — |
-| Codex | `~/.codex/skills/` | — |
-| Amp | `~/.amp/skills/` | — |
+| OpenCode | `~/.agents/skills/` | — |
+| Codex | `~/.agents/skills/` | — |
 
 ## Key Concepts
 

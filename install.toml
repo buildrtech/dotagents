@@ -1,7 +1,7 @@
 # install.toml - Configuration for dotagents installer
 #
 # Targets: which agent harnesses to install to.
-# Options: "pi", "claude", "codex", "amp"
+# Options: "pi", "claude", "opencode", "codex"
 targets = ["pi"]
 
 # Skills to exclude from installation (by directory name).

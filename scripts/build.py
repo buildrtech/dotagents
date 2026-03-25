@@ -46,11 +46,11 @@ TARGET_PATHS = {
     "claude": {
         "skills": HOME / ".claude" / "skills",
     },
-    "codex": {
-        "skills": HOME / ".codex" / "skills",
+    "opencode": {
+        "skills": HOME / ".agents" / "skills",
     },
-    "amp": {
-        "skills": HOME / ".amp" / "skills",
+    "codex": {
+        "skills": HOME / ".agents" / "skills",
     },
 }
 
