@@ -22,6 +22,7 @@ import tomllib
 # Directories
 ROOT = Path(__file__).parent.parent
 SKILLS_DIR = ROOT / "skills"
+AGENTS_DIR = ROOT / "agents"
 BUILD_DIR = ROOT / "build"
 CONFIGS_DIR = ROOT / "configs"
 GLOBAL_AGENTS_MD = CONFIGS_DIR / "AGENTS.md"
@@ -33,6 +34,7 @@ INSTALL_PATHS = {
     "claude": HOME / ".claude" / "skills",
     "unified": HOME / ".agents" / "skills",  # opencode, pi, codex
 }
+PI_AGENTS_PATH = HOME / ".pi" / "agent" / "agents"
 
 
 def load_skill_overrides() -> dict[str, dict]:
@@ -178,6 +180,48 @@ def install_skills() -> None:
         print(f"  {name}: {count} skills -> {dest}")
 
 
+def build_agents() -> None:
+    """Build agent definitions from ./agents."""
+    print("Building agents...")
+
+    agents_build = BUILD_DIR / "agents"
+    if agents_build.exists():
+        shutil.rmtree(agents_build)
+    agents_build.mkdir(parents=True)
+
+    built = 0
+    if AGENTS_DIR.exists():
+        for agent_file in sorted(AGENTS_DIR.iterdir()):
+            if not agent_file.is_file() or agent_file.suffix != ".md":
+                continue
+            shutil.copy(agent_file, agents_build / agent_file.name)
+            print(f"  {agent_file.stem}")
+            built += 1
+
+    print(f"  Built {built} agents")
+
+
+def install_agents() -> None:
+    """Install built agents to pi-subagents user directory."""
+    print("Installing agents...")
+
+    source = BUILD_DIR / "agents"
+    if not source.exists():
+        print("  No agents built, run 'make build' first")
+        return
+
+    PI_AGENTS_PATH.mkdir(parents=True, exist_ok=True)
+
+    count = 0
+    for agent_file in sorted(source.iterdir()):
+        if not agent_file.is_file() or agent_file.suffix != ".md":
+            continue
+        shutil.copy(agent_file, PI_AGENTS_PATH / agent_file.name)
+        count += 1
+
+    print(f"  pi-subagents: {count} agents -> {PI_AGENTS_PATH}")
+
+
 def install_global_agents_md() -> None:
     """Install global AGENTS.md for unified agents path."""
     print("Installing global AGENTS.md...")
@@ -205,6 +249,16 @@ def clean() -> None:
         shutil.rmtree(BUILD_DIR)
         print("  Removed build directory")
 
+    # Clean installed agents (only those we manage)
+    if PI_AGENTS_PATH.exists() and AGENTS_DIR.exists():
+        for agent_file in AGENTS_DIR.iterdir():
+            if not agent_file.is_file() or agent_file.suffix != ".md":
+                continue
+            installed = PI_AGENTS_PATH / agent_file.name
+            if installed.exists():
+                installed.unlink()
+                print(f"  Removed {installed}")
+
     agents_md_path = HOME / ".agents" / "AGENTS.md"
     if agents_md_path.exists():
         agents_md_path.unlink()
@@ -224,9 +278,12 @@ def main() -> None:
 
     if args.command == "build":
         build_skills()
+        build_agents()
     elif args.command == "install":
         build_skills()
+        build_agents()
         install_skills()
+        install_agents()
         install_global_agents_md()
         print("\nAll done!")
     elif args.command == "install-skills":
