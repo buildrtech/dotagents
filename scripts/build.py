@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Build and install custom skills for AI coding agents.
+Build and install custom skills and agents for AI coding agents.
 
-Builds skills from ./skills and installs them for:
+Builds skills from ./skills and agents from ./agents, then installs them for:
 - Claude Code (~/.claude/skills)
 - OpenCode, Pi, Codex (~/.agents/skills)
+- Pi Subagents (~/.pi/agent/agents)
 
 Requires Python 3.11+.
 """
