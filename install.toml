@@ -1,0 +1,22 @@
+# install.toml - Configuration for dotagents installer
+#
+# Targets: which agent harnesses to install to.
+# Options: "pi", "claude", "opencode", "codex"
+targets = ["pi"]
+
+# Skills to exclude from installation (by directory name).
+exclude = []
+
+# Extensions to exclude from installation (by filename or directory name).
+exclude-extensions = []
+
+# Frontmatter overrides applied to skills during build.
+# Use to modify skill metadata without editing SKILL.md directly.
+#
+# Example:
+#
+# [overrides.some-skill]
+# disable-model-invocation = true
+# description = "Custom description for this skill"
+
+[overrides]

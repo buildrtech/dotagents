@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Build and install custom skills for AI coding agents.
+Build and install skills and extensions for AI coding agents.
 
-Builds skills from ./skills and installs them for:
-- Claude Code (~/.claude/skills)
-- OpenCode, Pi, Codex (~/.agents/skills)
+Pi-first. Builds from ./skills and ./pi-extensions, installs to configured targets.
 
 Requires Python 3.11+.
 """
 
 import argparse
+import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -19,34 +19,83 @@ if sys.version_info < (3, 11):
 
 import tomllib
 
-# Directories
+# --- Colors ---
+RED = "\033[0;31m"
+GREEN = "\033[0;32m"
+YELLOW = "\033[1;33m"
+BLUE = "\033[0;34m"
+BOLD = "\033[1m"
+DIM = "\033[2m"
+NC = "\033[0m"
+
+# --- Paths ---
 ROOT = Path(__file__).parent.parent
 SKILLS_DIR = ROOT / "skills"
+EXTENSIONS_DIR = ROOT / "pi-extensions"
 BUILD_DIR = ROOT / "build"
 CONFIGS_DIR = ROOT / "configs"
 GLOBAL_AGENTS_MD = CONFIGS_DIR / "AGENTS.md"
-SKILL_OVERRIDES_FILE = ROOT / "skill-overrides.toml"
+CONFIG_FILE = ROOT / "install.toml"
 
-# Installation paths
 HOME = Path.home()
-INSTALL_PATHS = {
-    "claude": HOME / ".claude" / "skills",
-    "unified": HOME / ".agents" / "skills",  # opencode, pi, codex
+TARGET_PATHS = {
+    "pi": {
+        "skills": HOME / ".pi" / "agent" / "skills",
+        "extensions": HOME / ".pi" / "agent" / "extensions",
+    },
+    "claude": {
+        "skills": HOME / ".claude" / "skills",
+    },
+    "opencode": {
+        "skills": HOME / ".agents" / "skills",
+    },
+    "codex": {
+        "skills": HOME / ".agents" / "skills",
+    },
 }
 
+VALID_TARGETS = list(TARGET_PATHS.keys())
 
-def load_skill_overrides() -> dict[str, dict]:
-    """Load per-skill frontmatter overrides from skill-overrides.toml."""
-    if not SKILL_OVERRIDES_FILE.exists():
-        return {}
-    with open(SKILL_OVERRIDES_FILE, "rb") as f:
-        return tomllib.load(f)
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+
+
+def load_config() -> dict:
+    """Load configuration from install.toml."""
+    defaults = {
+        "targets": ["pi"],
+        "exclude": [],
+        "exclude-extensions": [],
+        "overrides": {},
+    }
+    if not CONFIG_FILE.exists():
+        return defaults
+
+    with open(CONFIG_FILE, "rb") as f:
+        data = tomllib.load(f)
+
+    targets = data.get("targets", ["pi"])
+    for t in targets:
+        if t not in VALID_TARGETS:
+            print(f"{YELLOW}Warning: Unknown target '{t}' in install.toml{NC}")
+
+    return {
+        "targets": [t for t in targets if t in VALID_TARGETS],
+        "exclude": data.get("exclude", []),
+        "exclude-extensions": data.get("exclude-extensions", []),
+        "overrides": data.get("overrides", {}),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Frontmatter processing
+# ---------------------------------------------------------------------------
 
 
 def apply_frontmatter_overrides(content: str, overrides: dict[str, str]) -> str:
     """Add or replace frontmatter fields based on overrides dict."""
-    import re
-
     if not overrides:
         return content
 
@@ -66,7 +115,10 @@ def apply_frontmatter_overrides(content: str, overrides: dict[str, str]) -> str:
         field_pattern = rf"^{re.escape(key)}:\s*.*$"
         if re.search(field_pattern, frontmatter, re.MULTILINE):
             frontmatter = re.sub(
-                field_pattern, f"{key}: {yaml_value}", frontmatter, flags=re.MULTILINE
+                field_pattern,
+                f"{key}: {yaml_value}",
+                frontmatter,
+                flags=re.MULTILINE,
             )
         else:
             frontmatter += f"\n{key}: {yaml_value}"
@@ -76,8 +128,6 @@ def apply_frontmatter_overrides(content: str, overrides: dict[str, str]) -> str:
 
 def fix_skill_frontmatter_name(content: str, expected_name: str) -> str:
     """Fix SKILL.md frontmatter `name` to match directory name."""
-    import re
-
     frontmatter_pattern = r"^---\s*\n(.*?)\n---"
     match = re.match(frontmatter_pattern, content, re.DOTALL)
     if not match:
@@ -99,26 +149,30 @@ def fix_skill_frontmatter_name(content: str, expected_name: str) -> str:
     return content[: match.start(1)] + new_frontmatter + content[match.end(1) :]
 
 
-def build_skill(name: str, source: Path, overrides: dict[str, dict] | None = None) -> bool:
+# ---------------------------------------------------------------------------
+# Build
+# ---------------------------------------------------------------------------
+
+
+def build_skill(
+    name: str, source: Path, overrides: dict[str, dict] | None = None
+) -> bool:
     """Build a single skill from source directory."""
     skill_md = source / "SKILL.md"
     if not skill_md.exists():
-        print(f"    Warning: {source} has no SKILL.md, skipping")
+        print(f"    {YELLOW}Warning: {source} has no SKILL.md, skipping{NC}")
         return False
 
     raw_content = skill_md.read_text()
-
     dest = BUILD_DIR / "skills" / name
     dest.mkdir(parents=True, exist_ok=True)
 
-    dest_skill_md = dest / "SKILL.md"
     skill_content = fix_skill_frontmatter_name(raw_content, name)
 
-    # Apply per-skill frontmatter overrides
     if overrides and name in overrides:
         skill_content = apply_frontmatter_overrides(skill_content, overrides[name])
 
-    dest_skill_md.write_text(skill_content)
+    (dest / "SKILL.md").write_text(skill_content)
 
     for item in source.iterdir():
         if item.name == "SKILL.md":
@@ -132,108 +186,416 @@ def build_skill(name: str, source: Path, overrides: dict[str, dict] | None = Non
     return True
 
 
-def build_skills() -> None:
-    """Build all custom skills from ./skills."""
-    print("Building skills...")
+def build_extension(name: str, source: Path) -> bool:
+    """Build a single extension (file or directory) to build/."""
+    dest_dir = BUILD_DIR / "extensions"
+    dest_dir.mkdir(parents=True, exist_ok=True)
 
-    skills_build = BUILD_DIR / "skills"
-    if skills_build.exists():
-        shutil.rmtree(skills_build)
-    skills_build.mkdir(parents=True)
+    dest = dest_dir / name
+    if source.is_dir():
+        if dest.exists():
+            shutil.rmtree(dest)
+        shutil.copytree(source, dest)
+    else:
+        shutil.copy(source, dest)
 
-    overrides = load_skill_overrides()
-    built = 0
+    return True
+
+
+def build(config: dict) -> tuple[list[str], list[str]]:
+    """Build skills and extensions to build/. Returns (skill_names, extension_names)."""
+    exclude_skills = set(config["exclude"])
+    exclude_extensions = set(config["exclude-extensions"])
+    overrides = config["overrides"]
+
+    # Clean build subdirectories
+    for subdir in ["skills", "extensions"]:
+        build_sub = BUILD_DIR / subdir
+        if build_sub.exists():
+            shutil.rmtree(build_sub)
+
+    # Build skills
+    built_skills = []
     if SKILLS_DIR.exists():
         for skill_dir in sorted(SKILLS_DIR.iterdir()):
             if not skill_dir.is_dir():
                 continue
+            if skill_dir.name in exclude_skills:
+                print(f"    {DIM}Excluded skill: {skill_dir.name}{NC}")
+                continue
             if build_skill(skill_dir.name, skill_dir, overrides):
-                print(f"  {skill_dir.name}")
-                built += 1
+                built_skills.append(skill_dir.name)
 
-    print(f"  Built {built} skills")
+    # Build extensions
+    built_extensions = []
+    if EXTENSIONS_DIR.exists():
+        for item in sorted(EXTENSIONS_DIR.iterdir()):
+            if item.name.startswith("."):
+                continue
+            ext_name = item.name
+            # Match exclusions with or without .ts suffix
+            exclude_key = ext_name.removesuffix(".ts") if item.is_file() else ext_name
+            if exclude_key in exclude_extensions or ext_name in exclude_extensions:
+                print(f"    {DIM}Excluded extension: {ext_name}{NC}")
+                continue
+            if item.is_file() and not item.name.endswith(".ts"):
+                continue
+            if build_extension(ext_name, item):
+                built_extensions.append(ext_name)
+
+    return built_skills, built_extensions
 
 
-def install_skills() -> None:
-    """Install built skills to configured agent directories."""
-    print("Installing skills...")
+# ---------------------------------------------------------------------------
+# Install
+# ---------------------------------------------------------------------------
 
-    source = BUILD_DIR / "skills"
-    if not source.exists():
-        print("  No skills built, run 'make build' first")
+
+def describe_existing(path: Path) -> str:
+    """Describe what currently exists at a path."""
+    if path.is_symlink():
+        target = os.readlink(path)
+        return f"symlink → {target}"
+    elif path.is_dir():
+        return "directory"
+    elif path.is_file():
+        return "file"
+    return "exists"
+
+
+def find_conflicts(
+    config: dict, built_skills: list[str], built_extensions: list[str]
+) -> dict:
+    """Check for conflicts at install destinations. Returns conflict info per target."""
+    conflicts = {}
+
+    for target in config["targets"]:
+        target_conflicts = {"skills": {}, "extensions": {}}
+        paths = TARGET_PATHS[target]
+
+        skills_dest = paths.get("skills")
+        if skills_dest:
+            for name in built_skills:
+                dest = skills_dest / name
+                if dest.exists() or dest.is_symlink():
+                    target_conflicts["skills"][name] = describe_existing(dest)
+
+        extensions_dest = paths.get("extensions")
+        if extensions_dest:
+            for name in built_extensions:
+                dest = extensions_dest / name
+                if dest.exists() or dest.is_symlink():
+                    target_conflicts["extensions"][name] = describe_existing(dest)
+
+        conflicts[target] = target_conflicts
+
+    return conflicts
+
+
+def count_conflicts(conflicts: dict) -> int:
+    """Count total number of conflicts across all targets."""
+    total = 0
+    for target_conf in conflicts.values():
+        total += len(target_conf["skills"]) + len(target_conf["extensions"])
+    return total
+
+
+def print_plan(
+    config: dict,
+    built_skills: list[str],
+    built_extensions: list[str],
+    conflicts: dict,
+):
+    """Print install plan for all targets."""
+    for target in config["targets"]:
+        paths = TARGET_PATHS[target]
+        target_conf = conflicts[target]
+
+        print(f"\n  {BOLD}[{target}]{NC}")
+
+        skills_dest = paths.get("skills")
+        if skills_dest and built_skills:
+            print(f"    Skills → {skills_dest}/")
+            for name in built_skills:
+                if name in target_conf["skills"]:
+                    desc = target_conf["skills"][name]
+                    print(f"      {name:<30} {YELLOW}(exists: {desc}){NC}")
+                else:
+                    print(f"      {name:<30} {GREEN}(new){NC}")
+
+        extensions_dest = paths.get("extensions")
+        if extensions_dest and built_extensions:
+            print(f"    Extensions → {extensions_dest}/")
+            for name in built_extensions:
+                if name in target_conf["extensions"]:
+                    desc = target_conf["extensions"][name]
+                    print(f"      {name:<30} {YELLOW}(exists: {desc}){NC}")
+                else:
+                    print(f"      {name:<30} {GREEN}(new){NC}")
+
+
+def install_items(
+    source_dir: Path, dest_dir: Path, items: list[str], wipe: bool = False
+):
+    """Copy items from build/ to a destination directory."""
+    if wipe and dest_dir.exists():
+        shutil.rmtree(dest_dir)
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    for name in items:
+        source = source_dir / name
+        dest = dest_dir / name
+
+        # Remove existing
+        if dest.is_symlink() or dest.exists():
+            if dest.is_dir() and not dest.is_symlink():
+                shutil.rmtree(dest)
+            else:
+                dest.unlink()
+
+        # Copy
+        if source.is_dir():
+            shutil.copytree(source, dest)
+        else:
+            shutil.copy(source, dest)
+
+
+def do_install(mode: str, only: str | None = None):
+    """Main install flow: build, check conflicts, preview or install."""
+    config = load_config()
+    targets = config["targets"]
+
+    print(f"{BLUE}=== dotagents installer ==={NC}")
+    print(f"Targets: {', '.join(targets)}")
+    label = mode if not only else f"{mode} ({only} only)"
+    print(f"Mode: {label}")
+
+    # Build
+    print(f"\n{BLUE}Building...{NC}")
+    built_skills, built_extensions = build(config)
+
+    # Filter based on --only
+    if only == "skills":
+        built_extensions = []
+    elif only == "extensions":
+        built_skills = []
+
+    print(
+        f"\n  {GREEN}Built {len(built_skills)} skills, {len(built_extensions)} extensions{NC}"
+    )
+
+    if not built_skills and not built_extensions:
+        print(f"\n{YELLOW}Nothing to install.{NC}")
         return
 
-    for name, dest in INSTALL_PATHS.items():
-        if dest.exists():
-            shutil.rmtree(dest)
-        dest.mkdir(parents=True, exist_ok=True)
+    # Check conflicts
+    conflicts = find_conflicts(config, built_skills, built_extensions)
+    conflict_count = count_conflicts(conflicts)
 
-        count = 0
-        for skill_dir in sorted(source.iterdir()):
-            if not skill_dir.is_dir():
-                continue
-            shutil.copytree(skill_dir, dest / skill_dir.name)
-            count += 1
+    # Print plan
+    print(f"\n{BLUE}Install plan:{NC}")
+    print_plan(config, built_skills, built_extensions, conflicts)
 
-        print(f"  {name}: {count} skills -> {dest}")
+    # Preview: stop here
+    if mode == "preview":
+        print()
+        if conflict_count > 0:
+            print(f"{YELLOW}{conflict_count} items already exist at destinations.{NC}")
+        print(
+            f"Run {BOLD}make install overwrite{NC} to install (overwriting conflicts)."
+        )
+        print(
+            f"Run {BOLD}make install wipe{NC} to wipe destinations first, then install."
+        )
+        return
+
+    # Overwrite: copy items individually, replacing conflicts
+    if mode == "overwrite":
+        print(f"\n{BLUE}Installing...{NC}")
+        for target in targets:
+            paths = TARGET_PATHS[target]
+
+            skills_dest = paths.get("skills")
+            if skills_dest and built_skills:
+                install_items(BUILD_DIR / "skills", skills_dest, built_skills)
+                print(
+                    f"  {GREEN}✓{NC} {target} skills: {len(built_skills)} installed"
+                )
+
+            extensions_dest = paths.get("extensions")
+            if extensions_dest and built_extensions:
+                install_items(
+                    BUILD_DIR / "extensions", extensions_dest, built_extensions
+                )
+                print(
+                    f"  {GREEN}✓{NC} {target} extensions: {len(built_extensions)} installed"
+                )
+
+    # Wipe: nuke destination directories, then install
+    elif mode == "wipe":
+        print(f"\n{BLUE}Wiping destinations and installing...{NC}")
+        for target in targets:
+            paths = TARGET_PATHS[target]
+
+            skills_dest = paths.get("skills")
+            if skills_dest and built_skills:
+                install_items(
+                    BUILD_DIR / "skills", skills_dest, built_skills, wipe=True
+                )
+                print(
+                    f"  {GREEN}✓{NC} {target} skills: wiped and installed {len(built_skills)}"
+                )
+
+            extensions_dest = paths.get("extensions")
+            if extensions_dest and built_extensions:
+                install_items(
+                    BUILD_DIR / "extensions",
+                    extensions_dest,
+                    built_extensions,
+                    wipe=True,
+                )
+                print(
+                    f"  {GREEN}✓{NC} {target} extensions: wiped and installed {len(built_extensions)}"
+                )
+
+    # Install global AGENTS.md for non-pi targets
+    install_global_agents_md(targets)
+
+    print(f"\n{GREEN}=== Done ==={NC}")
 
 
-def install_global_agents_md() -> None:
-    """Install global AGENTS.md for unified agents path."""
-    print("Installing global AGENTS.md...")
-
+def install_global_agents_md(targets: list[str]):
+    """Install global AGENTS.md for targets that use it."""
     if not GLOBAL_AGENTS_MD.exists():
-        print("  No AGENTS.md found in configs/, skipping")
+        return
+
+    # Only install for targets that use the unified ~/.agents/ path
+    unified_targets = [t for t in targets if t in ("codex", "amp")]
+    if not unified_targets:
         return
 
     dest = HOME / ".agents" / "AGENTS.md"
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(GLOBAL_AGENTS_MD, dest)
-    print(f"  Installed to {dest}")
+    print(f"  Installed AGENTS.md → {dest}")
 
 
-def clean() -> None:
-    """Remove all installed artifacts."""
-    print("Cleaning installed artifacts...")
+# ---------------------------------------------------------------------------
+# Build-only
+# ---------------------------------------------------------------------------
 
-    for path in INSTALL_PATHS.values():
-        if path.exists():
-            shutil.rmtree(path)
-            print(f"  Removed {path}")
 
+def do_build():
+    """Build skills and extensions to build/ without installing."""
+    config = load_config()
+    print(f"{BLUE}Building...{NC}")
+    built_skills, built_extensions = build(config)
+    print(
+        f"\n{GREEN}Built {len(built_skills)} skills, {len(built_extensions)} extensions → {BUILD_DIR}/{NC}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Clean
+# ---------------------------------------------------------------------------
+
+
+def do_clean():
+    """Remove dotagents-managed items from install destinations."""
+    config = load_config()
+    targets = config["targets"]
+
+    print(f"{BLUE}Cleaning dotagents items...{NC}")
+
+    # Collect our skill and extension names from source
+    our_skills = set()
+    if SKILLS_DIR.exists():
+        for d in SKILLS_DIR.iterdir():
+            if d.is_dir():
+                our_skills.add(d.name)
+
+    our_extensions = set()
+    if EXTENSIONS_DIR.exists():
+        for item in EXTENSIONS_DIR.iterdir():
+            if item.name.startswith("."):
+                continue
+            if item.is_dir() or (item.is_file() and item.name.endswith(".ts")):
+                our_extensions.add(item.name)
+
+    for target in targets:
+        paths = TARGET_PATHS[target]
+
+        skills_dest = paths.get("skills")
+        if skills_dest and skills_dest.exists():
+            removed = 0
+            for name in our_skills:
+                dest = skills_dest / name
+                if dest.exists() or dest.is_symlink():
+                    if dest.is_dir() and not dest.is_symlink():
+                        shutil.rmtree(dest)
+                    else:
+                        dest.unlink()
+                    removed += 1
+            if removed:
+                print(f"  {target} skills: removed {removed}")
+
+        extensions_dest = paths.get("extensions")
+        if extensions_dest and extensions_dest.exists():
+            removed = 0
+            for name in our_extensions:
+                dest = extensions_dest / name
+                if dest.exists() or dest.is_symlink():
+                    if dest.is_dir() and not dest.is_symlink():
+                        shutil.rmtree(dest)
+                    else:
+                        dest.unlink()
+                    removed += 1
+            if removed:
+                print(f"  {target} extensions: removed {removed}")
+
+    # Clean build directory
     if BUILD_DIR.exists():
         shutil.rmtree(BUILD_DIR)
-        print("  Removed build directory")
+        print(f"  Removed {BUILD_DIR}/")
 
-    agents_md_path = HOME / ".agents" / "AGENTS.md"
-    if agents_md_path.exists():
-        agents_md_path.unlink()
-        print(f"  Removed {agents_md_path}")
-
-    print("  Done")
+    print(f"{GREEN}Done{NC}")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Build and install AI agent skills")
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Build and install AI agent skills and extensions"
+    )
     parser.add_argument(
         "command",
-        choices=["build", "install", "install-skills", "clean"],
+        choices=["build", "install", "clean"],
         help="Command to run",
+    )
+    parser.add_argument(
+        "mode",
+        nargs="?",
+        default="preview",
+        choices=["preview", "overwrite", "wipe"],
+        help="Install mode: preview (default), overwrite, or wipe",
+    )
+    parser.add_argument(
+        "--only",
+        choices=["skills", "extensions"],
+        help="Install only skills or only extensions",
     )
     args = parser.parse_args()
 
     if args.command == "build":
-        build_skills()
+        do_build()
     elif args.command == "install":
-        build_skills()
-        install_skills()
-        install_global_agents_md()
-        print("\nAll done!")
-    elif args.command == "install-skills":
-        build_skills()
-        install_skills()
+        do_install(args.mode, only=args.only)
     elif args.command == "clean":
-        clean()
+        do_clean()
 
 
 if __name__ == "__main__":

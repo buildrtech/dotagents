@@ -1,23 +1,56 @@
 # dotagents
 
-Skills for AI coding agents.
+Skills and extensions for AI coding agents. Pi-first.
 
 ## Quick Start
 
 ```bash
+# Preview what would be installed
 make install
+
+# Install (overwriting any conflicts at destinations)
+make install overwrite
+```
+
+## Configuration
+
+All configuration lives in `install.toml`:
+
+```toml
+# Which agent harnesses to install to
+targets = ["pi"]              # Options: "pi", "claude", "opencode", "codex"
+
+# Skills to skip
+exclude = ["branch-quiz"]
+
+# Extensions to skip
+exclude-extensions = []
+
+# Frontmatter overrides (modify skill metadata without editing SKILL.md)
+[overrides.some-skill]
+disable-model-invocation = true
 ```
 
 ## Install Paths
 
-| Agent | Skills Path |
-|-------|-------------|
-| Claude Code | `~/.claude/skills/` |
-| OpenCode, Pi, Codex | `~/.agents/skills/` |
+| Target | Skills | Extensions |
+|--------|--------|------------|
+| Pi | `~/.pi/agent/skills/` | `~/.pi/agent/extensions/` |
+| Claude Code | `~/.claude/skills/` | — |
+| OpenCode | `~/.agents/skills/` | — |
+| Codex | `~/.agents/skills/` | — |
 
-## Super Power Skills
+## Commands
 
-These methodology skills improve AI agent effectiveness:
+| Command | Description |
+|---------|-------------|
+| `make install` | Preview what would be installed (default) |
+| `make install overwrite` | Install, overwriting conflicts |
+| `make install wipe` | Wipe destinations first, then install |
+| `make build` | Build to `build/` without installing |
+| `make clean` | Remove dotagents items from destinations |
+
+## Skills
 
 | Skill | Description |
 |-------|-------------|
@@ -34,23 +67,36 @@ These methodology skills improve AI agent effectiveness:
 | `ast-grep` | Structural code search and AST-based rule authoring |
 | `fetch-ci-build` | Fetch CI build results and diagnose failures across CI providers |
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `make install` | Build and install skills for all agents |
-| `make build` | Build skills to `build/` without installing |
-| `make install-skills` | Install skills only |
-| `make clean` | Remove all installed artifacts |
-| `make help` | Show all available commands |
-
 ## Adding Skills
 
 1. Create `skills/<skill-name>/SKILL.md` with YAML frontmatter
 2. Add supporting files to the same directory
-3. Run `make install`
+3. Run `make install overwrite`
 
 See [Agent Skills specification](https://agentskills.io/specification.md) for format details.
+
+## Adding Extensions
+
+1. Add a `.ts` file or directory with `index.ts` to `pi-extensions/`
+2. Run `make install overwrite`
+
+Extensions are pi-only. See [pi extensions docs](https://github.com/badlogic/pi-mono) for details.
+
+## Repository Structure
+
+```
+dotagents/
+├── skills/                   # Skill definitions (SKILL.md + supporting files)
+├── pi-extensions/            # Pi extensions (.ts files or directories)
+├── configs/
+│   └── AGENTS.md             # Global AGENTS.md for non-pi targets
+├── scripts/
+│   └── build.py              # Build and install system
+├── install.toml              # Installation configuration
+├── build/                    # Generated during build (gitignored)
+├── Makefile                  # Build automation
+└── README.md
+```
 
 ## Requirements
 
