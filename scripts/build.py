@@ -361,18 +361,26 @@ def install_items(
             shutil.copy(source, dest)
 
 
-def do_install(mode: str):
+def do_install(mode: str, only: str | None = None):
     """Main install flow: build, check conflicts, preview or install."""
     config = load_config()
     targets = config["targets"]
 
     print(f"{BLUE}=== dotagents installer ==={NC}")
     print(f"Targets: {', '.join(targets)}")
-    print(f"Mode: {mode}")
+    label = mode if not only else f"{mode} ({only} only)"
+    print(f"Mode: {label}")
 
     # Build
     print(f"\n{BLUE}Building...{NC}")
     built_skills, built_extensions = build(config)
+
+    # Filter based on --only
+    if only == "skills":
+        built_extensions = []
+    elif only == "extensions":
+        built_skills = []
+
     print(
         f"\n  {GREEN}Built {len(built_skills)} skills, {len(built_extensions)} extensions{NC}"
     )
@@ -575,12 +583,17 @@ def main():
         choices=["preview", "overwrite", "wipe"],
         help="Install mode: preview (default), overwrite, or wipe",
     )
+    parser.add_argument(
+        "--only",
+        choices=["skills", "extensions"],
+        help="Install only skills or only extensions",
+    )
     args = parser.parse_args()
 
     if args.command == "build":
         do_build()
     elif args.command == "install":
-        do_install(args.mode)
+        do_install(args.mode, only=args.only)
     elif args.command == "clean":
         do_clean()
 
