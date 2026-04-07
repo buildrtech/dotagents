@@ -6,7 +6,7 @@
  *
  * Provides both:
  * - /handoff command: user types `/handoff <goal>`
- * - handoff tool: agent can call when user explicitly requests a handoff
+ * - handoff tool: prepares a safe `/handoff ...` command for the user to submit
  *
  * Usage:
  *   /handoff now implement this for teams as well
@@ -41,6 +41,7 @@ import {
 	type HandoffOptions,
 } from "./lib/effective-options.js";
 import { loadModeSpec } from "./lib/mode-utils.js";
+import { prepareToolHandoff } from "./lib/tool-path.js";
 
 const SESSION_QUERY_SKILL_COMMAND = "/skill:session-query";
 
@@ -177,17 +178,8 @@ const emitHandoffActivity = (
 
 async function performHandoff(
 	pi: ExtensionAPI,
-	ctx: ExtensionContext,
+	ctx: ExtensionCommandContext,
 	goal: string,
-	pendingHandoff: {
-		prompt: string;
-		parentSession: string | undefined;
-		options?: HandoffOptions;
-	} | null,
-	setPendingHandoff: (
-		v: { prompt: string; parentSession: string | undefined; options?: HandoffOptions } | null,
-	) => void,
-	fromTool = false,
 	options?: HandoffOptions,
 ): Promise<string | undefined> {
 	if (!ctx.hasUI) {
@@ -257,95 +249,18 @@ async function performHandoff(
 		finalPrompt = `${goal}\n\n${result}`;
 	}
 
-	if (!fromTool && "newSession" in ctx) {
-		const cmdCtx = ctx as ExtensionCommandContext;
-		setPendingHandoffGlobal({ prompt: finalPrompt, options: effectiveOptions });
-		const newSessionResult = await cmdCtx.newSession({ parentSession: currentSessionFile });
-		if (newSessionResult.cancelled) {
-			setPendingHandoffGlobal(null);
-			return;
-		}
-	} else {
-		setPendingHandoff({
-			prompt: finalPrompt,
-			parentSession: currentSessionFile,
-			options: effectiveOptions,
-		});
+	setPendingHandoffGlobal({ prompt: finalPrompt, options: effectiveOptions });
+	const newSessionResult = await ctx.newSession({ parentSession: currentSessionFile });
+	if (newSessionResult.cancelled) {
+		setPendingHandoffGlobal(null);
+		return;
 	}
 
 	return undefined;
 }
 
 export default function (pi: ExtensionAPI) {
-	let pendingHandoff: {
-		prompt: string;
-		parentSession: string | undefined;
-		options?: HandoffOptions;
-	} | null = null;
-
-	let handoffTimestamp: number | null = null;
-
-	const setPendingHandoff = (
-		v: { prompt: string; parentSession: string | undefined; options?: HandoffOptions } | null,
-	) => {
-		pendingHandoff = v;
-	};
-
-	// --- Event handlers for tool-path handoff ---
-	//
-	// The /handoff command path can use ctx.newSession(), which replaces the
-	// session runtime. That destroys the old extension instance, so we stash the
-	// generated prompt on globalThis and let the new session_start handler send it.
-	//
-	// The tool path only receives ExtensionContext, which cannot call newSession().
-	// For that path we defer the switch until agent_end, then create the new
-	// session through sessionManager, seed the prompt on the next macrotask, and
-	// filter old messages out of the next provider request via the context event.
-	//
-	// This looks odd, but simpler approaches do not work:
-	// - sendUserMessage("/new") does not invoke slash-command behavior
-	// - tool contexts do not expose ctx.newSession()
-	// - we cannot replace the runtime while the current agent loop is still running
-	// - agent.state.messages is not reset by the low-level sessionManager switch
-	//
-	// The coordination is:
-	// 1. agent_end performs the deferred tool-path session switch and prompt send
-	// 2. context hides pre-handoff messages from the next LLM request
-	// 3. session_start clears the filter and handles command-path handoff pickup
-	pi.on("agent_end", (_event, ctx) => {
-		if (!pendingHandoff) return;
-
-		const { prompt, parentSession, options } = pendingHandoff;
-		pendingHandoff = null;
-		handoffTimestamp = Date.now();
-		// Tool contexts do not expose ctx.newSession(). We intentionally fall back
-		// to the low-level session manager switch here and pair it with the
-		// context/session_start handlers below so the next turn only sees the new
-		// session. Delete this cast once Pi exposes a typed tool-safe session
-		// switch API on ExtensionContext.
-		(ctx.sessionManager as any).newSession({ parentSession });
-
-		setTimeout(() => {
-			applyHandoffOptions(pi, ctx, options)
-				.catch((err) => console.error("Handoff option apply failed:", err))
-				.then(() => {
-					emitHandoffActivity(pi, HANDOFF_ACTIVITY_START_EVENT, "seeding");
-					pi.sendUserMessage(prompt);
-				});
-		}, 0);
-	});
-
-	pi.on("context", (event) => {
-		if (handoffTimestamp === null) return;
-
-		const newMessages = event.messages.filter((m: any) => m.timestamp >= handoffTimestamp!);
-		if (newMessages.length > 0) {
-			return { messages: newMessages };
-		}
-	});
-
 	pi.on("session_start", async (event, ctx) => {
-		handoffTimestamp = null;
 
 		if (event.reason === "new") {
 			const pending = getPendingHandoffGlobal();
@@ -391,15 +306,7 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			const hasOptions = options.mode || options.model;
-			const error = await performHandoff(
-				pi,
-				ctx,
-				goal,
-				pendingHandoff,
-				setPendingHandoff,
-				false,
-				hasOptions ? options : undefined,
-			);
+			const error = await performHandoff(pi, ctx, goal, hasOptions ? options : undefined);
 			if (error) {
 				ctx.ui.notify(error, "error");
 			}
@@ -410,7 +317,7 @@ export default function (pi: ExtensionAPI) {
 		name: "handoff",
 		label: "Handoff",
 		description:
-			"Transfer context to a new focused session. ONLY use this when the user explicitly asks for a handoff. Provide a goal describing what the new session should focus on.",
+			"Prepare a safe `/handoff ...` command in the editor for the user to submit. ONLY use this when the user explicitly asks for a handoff. Provide a goal describing what the new session should focus on.",
 		parameters: Type.Object({
 			goal: Type.String({ description: "The goal/task for the new session" }),
 			mode: Type.Optional(
@@ -428,30 +335,11 @@ export default function (pi: ExtensionAPI) {
 		}),
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			const options: HandoffOptions = {};
-			if (params.mode) options.mode = params.mode;
-			if (params.model) options.model = params.model;
-			const hasOptions = options.mode || options.model;
-			const error = await performHandoff(
-				pi,
-				ctx,
-				params.goal,
-				pendingHandoff,
-				setPendingHandoff,
-				true,
-				hasOptions ? options : undefined,
-			);
-			return {
-				content: [
-					{
-						type: "text",
-						text:
-							error ??
-							"Handoff initiated. The session will switch after the current turn completes.",
-					},
-				],
-				details: { ok: error === undefined },
-			};
+			return prepareToolHandoff(ctx, {
+				goal: params.goal,
+				mode: params.mode,
+				model: params.model,
+			});
 		},
 	});
 }
