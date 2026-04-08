@@ -4,6 +4,103 @@ import unittest
 from pathlib import Path
 
 
+class BuildSkillsTests(unittest.TestCase):
+    def setUp(self):
+        self.build = importlib.import_module("scripts.build")
+        self.original_build_dir = self.build.BUILD_DIR
+        self.original_install_paths = dict(self.build.INSTALL_PATHS)
+        self.original_home = self.build.HOME
+        self.original_agents_dir = self.build.AGENTS_DIR
+        self.original_pi_agents_path = self.build.PI_AGENTS_PATH
+        self.original_pi_extensions_path = self.build.PI_EXTENSIONS_PATH
+
+    def tearDown(self):
+        self.build.BUILD_DIR = self.original_build_dir
+        self.build.INSTALL_PATHS = self.original_install_paths
+        self.build.HOME = self.original_home
+        self.build.AGENTS_DIR = self.original_agents_dir
+        self.build.PI_AGENTS_PATH = self.original_pi_agents_path
+        self.build.PI_EXTENSIONS_PATH = self.original_pi_extensions_path
+
+    def test_install_skills_preserves_unmanaged_skills(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            built = root / "build" / "skills" / "new-skill"
+            built.mkdir(parents=True)
+            (built / "SKILL.md").write_text("---\nname: new-skill\n---\n")
+
+            installed = root / "installed-skills"
+            unmanaged = installed / "third-party"
+            unmanaged.mkdir(parents=True)
+            (unmanaged / "SKILL.md").write_text("---\nname: third-party\n---\n")
+
+            self.build.BUILD_DIR = root / "build"
+            self.build.INSTALL_PATHS = {"unified": installed}
+
+            self.build.install_skills()
+
+            self.assertTrue((installed / "new-skill" / "SKILL.md").exists())
+            self.assertTrue((installed / "third-party" / "SKILL.md").exists())
+
+    def test_install_skills_removes_stale_managed_skills(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            built = root / "build" / "skills" / "fresh-skill"
+            built.mkdir(parents=True)
+            (built / "SKILL.md").write_text("---\nname: fresh-skill\n---\n")
+
+            installed = root / "installed-skills"
+            stale = installed / "old-skill"
+            stale.mkdir(parents=True)
+            (stale / "SKILL.md").write_text("---\nname: old-skill\n---\n")
+
+            unmanaged = installed / "third-party"
+            unmanaged.mkdir(parents=True)
+            (unmanaged / "SKILL.md").write_text("---\nname: third-party\n---\n")
+
+            manifest = installed / ".dotagents-managed-skills"
+            manifest.write_text("fresh-skill\nold-skill\n")
+
+            self.build.BUILD_DIR = root / "build"
+            self.build.INSTALL_PATHS = {"unified": installed}
+
+            self.build.install_skills()
+
+            self.assertFalse((installed / "old-skill").exists())
+            self.assertTrue((installed / "fresh-skill" / "SKILL.md").exists())
+            self.assertTrue((installed / "third-party" / "SKILL.md").exists())
+            self.assertEqual(manifest.read_text(), "fresh-skill\n")
+
+    def test_clean_removes_only_managed_skills(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            installed = root / "installed-skills"
+
+            managed = installed / "managed-skill"
+            managed.mkdir(parents=True)
+            (managed / "SKILL.md").write_text("---\nname: managed-skill\n---\n")
+
+            unmanaged = installed / "third-party"
+            unmanaged.mkdir(parents=True)
+            (unmanaged / "SKILL.md").write_text("---\nname: third-party\n---\n")
+
+            manifest = installed / ".dotagents-managed-skills"
+            manifest.write_text("managed-skill\n")
+
+            self.build.INSTALL_PATHS = {"unified": installed}
+            self.build.BUILD_DIR = root / "build"
+            self.build.HOME = root / "home"
+            self.build.AGENTS_DIR = root / "agents-source"
+            self.build.PI_AGENTS_PATH = root / "pi-agents"
+            self.build.PI_EXTENSIONS_PATH = root / "pi-extensions"
+
+            self.build.clean()
+
+            self.assertFalse((installed / "managed-skill").exists())
+            self.assertTrue((installed / "third-party" / "SKILL.md").exists())
+            self.assertFalse(manifest.exists())
+
+
 class BuildExtensionsTests(unittest.TestCase):
     def setUp(self):
         self.build = importlib.import_module("scripts.build")

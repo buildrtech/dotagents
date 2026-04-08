@@ -33,6 +33,7 @@ INSTALL_PATHS = {
 }
 PI_AGENTS_PATH = HOME / ".pi" / "agent" / "agents"
 PI_EXTENSIONS_PATH = HOME / ".pi" / "agent" / "extensions"
+SKILLS_MANIFEST = ".dotagents-managed-skills"
 PI_EXTENSIONS_MANIFEST = ".dotagents-managed-extensions"
 
 
@@ -184,18 +185,30 @@ def install_skills() -> None:
         print("  No skills built, run 'make build' first")
         return
 
+    source_names = {
+        skill_dir.name for skill_dir in sorted(source.iterdir()) if skill_dir.is_dir()
+    }
+
     for name, dest in INSTALL_PATHS.items():
-        if dest.exists():
-            shutil.rmtree(dest)
         dest.mkdir(parents=True, exist_ok=True)
+
+        previous_managed = load_managed_skills(dest)
+        for stale_name in sorted(previous_managed - source_names):
+            stale_path = dest / stale_name
+            if stale_path.exists():
+                shutil.rmtree(stale_path)
 
         count = 0
         for skill_dir in sorted(source.iterdir()):
             if not skill_dir.is_dir():
                 continue
-            shutil.copytree(skill_dir, dest / skill_dir.name)
+            skill_dest = dest / skill_dir.name
+            if skill_dest.exists():
+                shutil.rmtree(skill_dest)
+            shutil.copytree(skill_dir, skill_dest)
             count += 1
 
+        save_managed_skills(dest, source_names)
         print(f"  {name}: {count} skills -> {dest}")
 
 
@@ -220,28 +233,39 @@ def install_agents() -> None:
     print(f"  pi-subagents: {count} agents -> {PI_AGENTS_PATH}")
 
 
+def load_manifest(manifest: Path) -> set[str]:
+    if not manifest.exists():
+        return set()
+    return {line.strip() for line in manifest.read_text().splitlines() if line.strip()}
+
+
+def save_manifest(manifest: Path, names: set[str]) -> None:
+    content = "".join(f"{name}\n" for name in sorted(names))
+    manifest.write_text(content)
+
+
+def managed_skills_manifest_path(dest: Path) -> Path:
+    return dest / SKILLS_MANIFEST
+
+
+def load_managed_skills(dest: Path) -> set[str]:
+    return load_manifest(managed_skills_manifest_path(dest))
+
+
+def save_managed_skills(dest: Path, names: set[str]) -> None:
+    save_manifest(managed_skills_manifest_path(dest), names)
+
+
 def managed_extensions_manifest_path() -> Path:
     return PI_EXTENSIONS_PATH / PI_EXTENSIONS_MANIFEST
 
 
-
 def load_managed_extensions() -> set[str]:
-    manifest = managed_extensions_manifest_path()
-    if not manifest.exists():
-        return set()
-    return {
-        line.strip()
-        for line in manifest.read_text().splitlines()
-        if line.strip()
-    }
-
+    return load_manifest(managed_extensions_manifest_path())
 
 
 def save_managed_extensions(names: set[str]) -> None:
-    manifest = managed_extensions_manifest_path()
-    content = "".join(f"{name}\n" for name in sorted(names))
-    manifest.write_text(content)
-
+    save_manifest(managed_extensions_manifest_path(), names)
 
 
 def install_extensions() -> None:
@@ -300,9 +324,19 @@ def clean() -> None:
     print("Cleaning installed artifacts...")
 
     for path in INSTALL_PATHS.values():
-        if path.exists():
-            shutil.rmtree(path)
-            print(f"  Removed {path}")
+        if not path.exists():
+            continue
+
+        for skill_name in sorted(load_managed_skills(path)):
+            installed = path / skill_name
+            if installed.exists():
+                shutil.rmtree(installed)
+                print(f"  Removed {installed}")
+
+        manifest = managed_skills_manifest_path(path)
+        if manifest.exists():
+            manifest.unlink()
+            print(f"  Removed {manifest}")
 
     if BUILD_DIR.exists():
         shutil.rmtree(BUILD_DIR)
