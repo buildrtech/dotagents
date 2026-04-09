@@ -9,9 +9,7 @@ metadata:
 
 # Buildkite CLI with `bk`
 
-Use this skill when the user needs to work with Buildkite from the command line: configure org access, inspect pipelines, trigger builds, debug jobs, manage agents, fetch artifacts, or triage CI failures.
-
-If the task is “fetch CI build and diagnose failures,” use this skill as the Buildkite path (instead of custom scripts) and drive the workflow with `bk` commands.
+Use this skill when the user needs to work with Buildkite from the command line: configure org access, inspect pipelines, trigger builds, debug jobs, manage agents, or fetch artifacts.
 
 ## Documentation
 
@@ -33,71 +31,6 @@ bk pipeline list
 bk build list --pipeline my-pipeline
 bk job list --pipeline my-pipeline --state failed
 ```
-
-## CI failure triage workflow (fetch-ci-build style, `bk` only)
-
-Use this when the user asks to inspect a failed Buildkite build.
-
-### 1) Start from a Buildkite URL (if provided)
-
-Example URL:
-`https://buildkite.com/<org>/<pipeline>/builds/<build-number>#<job-id>`
-
-Extract pipeline + build number:
-
-```bash
-url="https://buildkite.com/my-org/my-pipeline/builds/1234"
-pipeline=$(printf '%s' "$url" | sed -E 's#https://buildkite.com/[^/]+/([^/]+)/builds/.*#\1#')
-build=$(printf '%s' "$url" | sed -E 's#.*builds/([0-9]+).*#\1#')
-```
-
-If no URL is provided, ask for `pipeline` and `build-number` (or find latest failed build with `bk build list --state failed`).
-
-### 2) Fetch build summary
-
-```bash
-bk build view "$build" --pipeline "$pipeline" --output json
-```
-
-Capture and report at minimum:
-- build state
-- branch + commit
-- message
-- web URL
-
-### 3) List failed jobs in the build
-
-```bash
-bk api "/pipelines/$pipeline/builds/$build/jobs" \
-  | jq '[.[] | select(.state == "failed") | {id, name, web_url, exit_status}]'
-```
-
-### 4) Pull logs for each failed job
-
-```bash
-bk job log <job-id> --pipeline "$pipeline" --build-number "$build" --no-timestamps
-```
-
-### 5) Extract actionable failures
-
-From logs, prioritize:
-- failing test name + file + line
-- compiler/linter/type-check errors
-- first concrete error (skip noisy cascades)
-
-Useful quick filters:
-
-```bash
-rg -n "FAIL|FAILED|Error:|AssertionError|TypeError|SyntaxError|undefined method|cannot find" build.log
-```
-
-### 6) Report like fetch-ci-build
-
-For each failed job, provide:
-- what failed
-- evidence (error snippet)
-- likely fix direction
-- whether to apply fix now or continue investigating
 
 ## Commands
 
