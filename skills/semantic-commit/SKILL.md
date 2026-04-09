@@ -9,34 +9,6 @@ metadata:
 
 Create git commits following the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 
-## Pre-Commit Hygiene (Required)
-
-Before message formatting, ensure the staged code is clean.
-
-1. Run the `remove-slop` skill as a cleanup pass.
-2. Verify there is no commit noise:
-   - debug statements
-   - TODO/FIXME/HACK comments
-   - commented-out dead code
-   - skipped/disabled tests
-
-Pre-commit gate commands:
-
-```bash
-# Debug statements
-rg -i "console\.log|debugger|binding\.pry|puts|print\(" --type-add 'code:*.{js,ts,rb,py}' -t code
-
-# TODO-style markers in staged files
-git diff --cached --name-only | xargs rg "TODO|FIXME|XXX|HACK" 2>/dev/null
-
-# Commented-out code in staged hunks
-git diff --cached | rg "^\+" | rg "^\+\s*(//|#)\s*(def |function |class |const |let |var )"
-```
-
-If any command returns matches, clean up before committing.
-
-> These `rg` checks are candidates for a git pre-commit hook. See `pre-commit-workflow` memory note for why rubocop is deferred; these grep checks are lightweight enough to encode structurally.
-
 ## Commit Format
 
 ```
