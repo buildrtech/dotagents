@@ -32,9 +32,7 @@ View logs for failed steps only:
 gh run view <run-id> --repo owner/repo --log-failed
 ```
 
-## Creating PRs (lightweight mechanics)
-
-For polished PR authoring workflow (preflight verification, reviewer-context body structure, and post-create validation), use the `creating-pr` skill.
+## Creating PRs
 
 Before creating a PR, ensure planning/design docs are removed from the branch unless explicitly requested in the PR scope.
 
