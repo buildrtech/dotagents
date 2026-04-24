@@ -60,11 +60,12 @@ describe("openai-fast config", () => {
 		assert.deepEqual(config.supportedModels, [
 			{ provider: "openai", id: "gpt-5.4" },
 			{ provider: "openai-codex", id: "gpt-5.4" },
+			{ provider: "openai-codex", id: "gpt-5.5" },
 		]);
 		assert.deepEqual(JSON.parse(readFileSync(globalConfigPath, "utf8")), {
 			persistState: true,
 			active: false,
-			supportedModels: ["openai/gpt-5.4", "openai-codex/gpt-5.4"],
+			supportedModels: ["openai/gpt-5.4", "openai-codex/gpt-5.4", "openai-codex/gpt-5.5"],
 		});
 	});
 });

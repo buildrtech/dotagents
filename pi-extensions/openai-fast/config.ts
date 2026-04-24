@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
 export const FAST_CONFIG_BASENAME = "openai-fast.json";
-export const DEFAULT_SUPPORTED_MODEL_KEYS = ["openai/gpt-5.4", "openai-codex/gpt-5.4"] as const;
+export const DEFAULT_SUPPORTED_MODEL_KEYS = ["openai/gpt-5.4", "openai-codex/gpt-5.4", "openai-codex/gpt-5.5"] as const;
 
 export interface FastSupportedModel {
 	provider: string;
